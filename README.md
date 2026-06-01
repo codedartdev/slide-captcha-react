@@ -209,6 +209,7 @@ npm run test
 npm run lint
 npm run typecheck
 npm run format
+npm run deploy
 ```
 
 Para rodar o exemplo:
@@ -218,17 +219,22 @@ npm install
 npm run dev --workspace @codedartdev/slide-captcha-react-example
 ```
 
-## Publicação futura no npm
+## Publicação no npm
 
-Antes de publicar:
+O deploy gerencia o versionamento automaticamente. Por padrão, ele incrementa `patch`, roda as validações, gera o build, publica no npm e faz push do commit/tag criado pelo `npm version`.
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
 npm run deploy
 ```
 
-O script `deploy` roda lint, typecheck, testes, build e publica com `npm publish --access public`.
+Outros incrementos:
+
+```bash
+npm run deploy -- minor
+npm run deploy -- major
+npm run deploy -- 1.2.3
+npm run deploy -- prerelease --preid beta
+```
+
+O script `deploy` exige a árvore Git limpa, roda lint, typecheck, testes e build, executa `npm version`, publica com `npm publish --access public` e envia o commit/tag com `git push --follow-tags`.
 O pacote publica apenas `dist`, `README.md` e `LICENSE`.

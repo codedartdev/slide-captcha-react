@@ -42,7 +42,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && npm run typecheck --workspace @codedartdev/slide-captcha-react-example",
     "format": "prettier --write .",
-    "deploy": "npm run lint && npm run typecheck && npm run test && npm run build && npm publish --access public"
+    "deploy": "node scripts/deploy.mjs"
   },
   "publishConfig": {
     "access": "public"
