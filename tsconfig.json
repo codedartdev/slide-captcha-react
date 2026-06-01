@@ -17,7 +17,7 @@
     "jsx": "react-jsx",
     "types": ["vitest/globals"],
     "paths": {
-      "@codedart/slide-captcha-react": ["./src/index.ts"]
+      "@codedartdev/slide-captcha-react": ["./src/index.ts"]
     }
   },
   "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]

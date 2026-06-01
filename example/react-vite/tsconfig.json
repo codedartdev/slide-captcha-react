@@ -17,8 +17,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@codedart/slide-captcha-react": ["../../src/index.ts"],
-      "@codedart/slide-captcha-react/styles.css": ["../../src/styles/slide-captcha.css"]
+      "@codedartdev/slide-captcha-react": ["../../src/index.ts"],
+      "@codedartdev/slide-captcha-react/styles.css": ["../../src/styles/slide-captcha.css"]
     }
   },
   "include": ["src", "vite.config.ts"]

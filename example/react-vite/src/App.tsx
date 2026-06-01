@@ -1,4 +1,4 @@
-import { SlideCaptcha } from '@codedart/slide-captcha-react';
+import { SlideCaptcha } from '@codedartdev/slide-captcha-react';
 import { useForm } from 'react-hook-form';
 
 type LoginFormValues = {

@@ -1,9 +1,17 @@
 {
-  "name": "@codedart/slide-captcha-react",
+  "name": "@codedartdev/slide-captcha-react",
   "version": "0.1.0",
   "description": "React components and TypeScript client for Laravel Slide CAPTCHA.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codedartdev/slide-captcha-react.git"
+  },
+  "homepage": "https://github.com/codedartdev/slide-captcha-react#readme",
+  "bugs": {
+    "url": "https://github.com/codedartdev/slide-captcha-react/issues"
+  },
   "sideEffects": [
     "**/*.css"
   ],
@@ -32,8 +40,12 @@
     "build": "tsup",
     "test": "vitest run",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit && npm run typecheck --workspace @codedart/slide-captcha-react-example",
-    "format": "prettier --write ."
+    "typecheck": "tsc --noEmit && npm run typecheck --workspace @codedartdev/slide-captcha-react-example",
+    "format": "prettier --write .",
+    "deploy": "npm run lint && npm run typecheck && npm run test && npm run build && npm publish --access public"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
     "react": "^18.2.0 || ^19.0.0"

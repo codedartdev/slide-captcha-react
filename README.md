@@ -1,4 +1,4 @@
-# @codedart/slide-captcha-react
+# @codedartdev/slide-captcha-react
 
 Pacote React + TypeScript para consumir o Laravel Slide CAPTCHA em aplicações web modernas. Ele não inclui backend próprio: o pacote apenas conversa com os endpoints já existentes do Laravel.
 
@@ -10,20 +10,20 @@ Endpoints esperados:
 ## Instalação
 
 ```bash
-npm install @codedart/slide-captcha-react
+npm install @codedartdev/slide-captcha-react
 ```
 
 Importe também o CSS padrão:
 
 ```tsx
-import '@codedart/slide-captcha-react/styles.css';
+import '@codedartdev/slide-captcha-react/styles.css';
 ```
 
 ## Uso básico
 
 ```tsx
-import { SlideCaptcha } from '@codedart/slide-captcha-react';
-import '@codedart/slide-captcha-react/styles.css';
+import { SlideCaptcha } from '@codedartdev/slide-captcha-react';
+import '@codedartdev/slide-captcha-react/styles.css';
 
 export function LoginCaptcha() {
   return (
@@ -70,7 +70,7 @@ VITE_API_BASE_URL=https://api.example.com
 O exemplo completo está em `example/react-vite`.
 
 ```tsx
-import { SlideCaptcha } from '@codedart/slide-captcha-react';
+import { SlideCaptcha } from '@codedartdev/slide-captcha-react';
 import { useForm } from 'react-hook-form';
 
 type LoginForm = {
@@ -133,7 +133,7 @@ export function LoginForm() {
 Também é possível usar apenas o client interno:
 
 ```ts
-import { createSlideCaptchaClient } from '@codedart/slide-captcha-react';
+import { createSlideCaptchaClient } from '@codedartdev/slide-captcha-react';
 
 const client = createSlideCaptchaClient({
   baseUrl: 'https://api.example.com',
@@ -168,7 +168,7 @@ Opções disponíveis:
 Erros são normalizados como `SlideCaptchaError`:
 
 ```ts
-import { isSlideCaptchaError } from '@codedart/slide-captcha-react';
+import { isSlideCaptchaError } from '@codedartdev/slide-captcha-react';
 
 function handleError(error: unknown) {
   if (isSlideCaptchaError(error)) {
@@ -215,7 +215,7 @@ Para rodar o exemplo:
 
 ```bash
 npm install
-npm run dev --workspace @codedart/slide-captcha-react-example
+npm run dev --workspace @codedartdev/slide-captcha-react-example
 ```
 
 ## Publicação futura no npm
@@ -227,7 +227,8 @@ npm run lint
 npm run typecheck
 npm run test
 npm run build
-npm publish --access public
+npm run deploy
 ```
 
+O script `deploy` roda lint, typecheck, testes, build e publica com `npm publish --access public`.
 O pacote publica apenas `dist`, `README.md` e `LICENSE`.
