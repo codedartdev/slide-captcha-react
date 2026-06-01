@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.DS_Store
+*.log
+example/react-vite/dist
+example/react-vite/.env.local
