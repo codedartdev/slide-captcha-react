@@ -237,4 +237,9 @@ npm run deploy -- prerelease --preid beta
 ```
 
 O script `deploy` exige a árvore Git limpa, roda lint, typecheck, testes e build, executa `npm version`, publica com `npm publish --access public` e envia o commit/tag com `git push --follow-tags`.
-O pacote publica apenas `dist`, `README.md` e `LICENSE`.
+
+O pacote publicado usa somente a build compilada em `dist`. Os campos `main`, `module`, `types` e `exports` apontam para arquivos dentro de `dist`, e a lista `files` publica apenas `dist`, `README.md` e `LICENSE`.
+
+O script `prepack` executa `npm run build` automaticamente antes de `npm pack` e `npm publish`, garantindo que o tarball contenha a build atualizada. O pacote não usa `postinstall`, porque instalar dependências não deve executar build no ambiente do consumidor; isso evita problemas de segurança, compatibilidade com CI, instalações offline e experiência de instalação.
+
+O diretório `src` permanece no repositório como referência técnica e base de desenvolvimento, mas não entra no pacote publicado.

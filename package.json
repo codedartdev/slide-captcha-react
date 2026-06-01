@@ -38,6 +38,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "prepack": "npm run build",
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && npm run typecheck --workspace @codedartdev/slide-captcha-react-example",
