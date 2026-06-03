@@ -76,6 +76,7 @@ export type SlideCaptchaTexts = {
   verify?: string;
   verified?: string;
   refresh?: string;
+  rotationLabel?: string;
   rotateLeft?: string;
   rotateRight?: string;
   errorTitle?: string;

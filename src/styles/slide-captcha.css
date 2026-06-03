@@ -88,7 +88,8 @@
 }
 
 .scaptcha__piece:focus-visible,
-.scaptcha__button:focus-visible {
+.scaptcha__button:focus-visible,
+.scaptcha__rotation-slider:focus-visible {
   outline: 3px solid var(--scaptcha-focus);
   outline-offset: 2px;
 }
@@ -116,7 +117,6 @@
   gap: 0.625rem;
 }
 
-.scaptcha__rotation-controls,
 .scaptcha__main-controls {
   display: flex;
   flex-wrap: wrap;
@@ -125,6 +125,105 @@
 
 .scaptcha__main-controls {
   justify-content: space-between;
+}
+
+.scaptcha__rotation-control {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid rgb(214 221 230 / 0.9);
+  border-radius: 8px;
+  padding: 0.7rem 0.75rem 0.8rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.scaptcha__rotation-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.scaptcha__rotation-label,
+.scaptcha__rotation-value {
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.scaptcha__rotation-label {
+  color: var(--scaptcha-muted);
+  font-weight: 600;
+}
+
+.scaptcha__rotation-value {
+  min-width: 3.25rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.5rem;
+  background: #eef4fb;
+  color: var(--scaptcha-primary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.scaptcha__rotation-slider {
+  width: 100%;
+  height: 1.75rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scaptcha__rotation-slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.scaptcha__rotation-slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--scaptcha-primary) 0%,
+    var(--scaptcha-primary) var(--scaptcha-rotation-progress, 0%),
+    #dbe4ef var(--scaptcha-rotation-progress, 0%),
+    #dbe4ef 100%
+  );
+}
+
+.scaptcha__rotation-slider::-webkit-slider-thumb {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: -0.425rem;
+  appearance: none;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--scaptcha-primary);
+  box-shadow:
+    0 0 0 1px rgb(23 105 170 / 0.18),
+    0 6px 14px rgb(23 105 170 / 0.3);
+}
+
+.scaptcha__rotation-slider::-moz-range-track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #dbe4ef;
+}
+
+.scaptcha__rotation-slider::-moz-range-progress {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--scaptcha-primary);
+}
+
+.scaptcha__rotation-slider::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--scaptcha-primary);
+  box-shadow:
+    0 0 0 1px rgb(23 105 170 / 0.18),
+    0 6px 14px rgb(23 105 170 / 0.3);
 }
 
 .scaptcha__button {

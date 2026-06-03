@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { KeyboardEvent, PointerEvent } from 'react';
+import type { ChangeEvent, CSSProperties, KeyboardEvent, PointerEvent } from 'react';
 import { useSlideCaptcha } from '../hooks/useSlideCaptcha';
 import type {
   SlideCaptchaChallenge,
@@ -15,6 +15,7 @@ const DEFAULT_TEXTS: Required<SlideCaptchaTexts> = {
   verify: 'Verificar CAPTCHA',
   verified: 'CAPTCHA resolvido.',
   refresh: 'Recarregar desafio',
+  rotationLabel: 'Ajustar rotação',
   rotateLeft: 'Girar para a esquerda',
   rotateRight: 'Girar para a direita',
   errorTitle: 'Não foi possível validar o CAPTCHA.',
@@ -236,20 +237,21 @@ export function SlideCaptcha({
     [addMovement, canInteract, challenge, state.rotation, state.x, state.y],
   );
 
-  const rotate = useCallback(
-    (direction: -1 | 1) => {
-      if (
-        !challenge ||
-        !canInteract ||
-        !challenge.rotation_enabled ||
-        challenge.rotation_step <= 0
-      ) {
+  const handleRotationChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      if (!challenge || !canInteract || !challenge.rotation_enabled) {
         return;
       }
 
-      addMovement(state.x, state.y, state.rotation + direction * challenge.rotation_step);
+      const nextRotation = Number(event.currentTarget.value);
+
+      if (!Number.isFinite(nextRotation)) {
+        return;
+      }
+
+      addMovement(state.x, state.y, nextRotation);
     },
-    [addMovement, canInteract, challenge, state.rotation, state.x, state.y],
+    [addMovement, canInteract, challenge, state.x, state.y],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -303,6 +305,17 @@ export function SlideCaptcha({
   const rootClassName = ['scaptcha', className].filter(Boolean).join(' ');
   const backgroundUrl = challenge ? resolveAssetUrl(challenge.background_url, baseUrl) : undefined;
   const pieceUrl = challenge ? resolveAssetUrl(challenge.piece_url, baseUrl) : undefined;
+  const rotationStep =
+    challenge?.rotation_step && challenge.rotation_step > 0 ? challenge.rotation_step : 1;
+  const rotationMax = challenge ? getRotationSliderMax(challenge.rotation_step) : 0;
+  const rotationSliderValue =
+    rotationMax > 0 ? clamp(normalizeRotation(state.rotation), 0, rotationMax) : 0;
+  const rotationProgress = rotationMax > 0 ? (rotationSliderValue / rotationMax) * 100 : 0;
+  const rotationValueText = formatRotation(rotationSliderValue);
+  const rotationSliderStyle = {
+    '--scaptcha-rotation-progress': `${rotationProgress}%`,
+  } as CSSProperties;
+  const canRotate = canInteract && rotationMax > 0;
   const stageStyle = challenge
     ? {
         aspectRatio: `${challenge.image_width} / ${challenge.image_height}`,
@@ -362,25 +375,24 @@ export function SlideCaptcha({
 
       <div className="scaptcha__controls">
         {challenge?.rotation_enabled ? (
-          <div className="scaptcha__rotation-controls">
-            <button
-              className="scaptcha__button"
-              type="button"
-              onClick={() => rotate(-1)}
-              disabled={!canInteract || challenge.rotation_step <= 0}
-              aria-label={resolvedTexts.rotateLeft}
-            >
-              {resolvedTexts.rotateLeft}
-            </button>
-            <button
-              className="scaptcha__button"
-              type="button"
-              onClick={() => rotate(1)}
-              disabled={!canInteract || challenge.rotation_step <= 0}
-              aria-label={resolvedTexts.rotateRight}
-            >
-              {resolvedTexts.rotateRight}
-            </button>
+          <div className="scaptcha__rotation-control">
+            <div className="scaptcha__rotation-meta">
+              <span className="scaptcha__rotation-label">{resolvedTexts.rotationLabel}</span>
+              <output className="scaptcha__rotation-value">{rotationValueText}</output>
+            </div>
+            <input
+              className="scaptcha__rotation-slider"
+              type="range"
+              min={0}
+              max={rotationMax}
+              step={rotationStep}
+              value={rotationSliderValue}
+              onChange={handleRotationChange}
+              disabled={!canRotate}
+              aria-label={resolvedTexts.rotationLabel}
+              aria-valuetext={rotationValueText}
+              style={rotationSliderStyle}
+            />
           </div>
         ) : null}
 
@@ -442,6 +454,23 @@ function clamp(value: number, min: number, max: number): number {
 function normalizeRotation(value: number): number {
   const rotation = value % 360;
   return rotation < 0 ? rotation + 360 : rotation;
+}
+
+function getRotationSliderMax(rotationStep: number): number {
+  if (rotationStep <= 0 || rotationStep >= 360) {
+    return 0;
+  }
+
+  return Math.floor(359 / rotationStep) * rotationStep;
+}
+
+function formatRotation(value: number): string {
+  const rotation = normalizeRotation(value);
+  const formatted = Number.isInteger(rotation)
+    ? String(rotation)
+    : String(Number(rotation.toFixed(1)));
+
+  return `${formatted}°`;
 }
 
 function resolveAssetUrl(url: string, baseUrl?: string): string {
