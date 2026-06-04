@@ -34,7 +34,10 @@ describe('SlideCaptcha', () => {
       return jsonResponse(challenge);
     });
 
-    render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
+    const { container } = render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
+
+    expect(container.firstElementChild?.getAttribute('data-theme')).toBe('dark');
+    expect(container.firstElementChild?.getAttribute('data-variant')).toBe('inline');
 
     const verifyButton = await screen.findByRole('button', { name: 'Verificar CAPTCHA' });
     fireEvent.click(verifyButton);
@@ -90,5 +93,30 @@ describe('SlideCaptcha', () => {
       y: 60,
       r: 30,
     });
+  });
+
+  it('calls onCancel from the modal controls when provided', async () => {
+    const onCancel = vi.fn();
+    const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
+
+    render(<SlideCaptcha fetcher={fetcher} onCancel={onCancel} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fechar verificação' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+
+  it('can render as a light modal dialog', async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
+
+    render(<SlideCaptcha fetcher={fetcher} theme="light" variant="modal" />);
+
+    const dialog = screen.getByRole('dialog', { name: 'Verificação de segurança' });
+    const root = dialog.parentElement;
+
+    expect(root?.getAttribute('data-theme')).toBe('light');
+    expect(root?.getAttribute('data-variant')).toBe('modal');
+    await screen.findByAltText('Imagem do desafio CAPTCHA');
   });
 });

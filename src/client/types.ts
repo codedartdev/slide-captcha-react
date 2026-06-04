@@ -69,13 +69,21 @@ export type SlideCaptchaState = {
   error: SlideCaptchaError | null;
 };
 
+export type SlideCaptchaTheme = 'dark' | 'light';
+
+export type SlideCaptchaVariant = 'inline' | 'modal';
+
 export type SlideCaptchaTexts = {
   loading?: string;
   dragInstructions?: string;
   challengeUnavailable?: string;
+  title?: string;
+  subtitle?: string;
   verify?: string;
   verified?: string;
   refresh?: string;
+  cancel?: string;
+  close?: string;
   rotationLabel?: string;
   rotateLeft?: string;
   rotateRight?: string;
@@ -87,9 +95,12 @@ export type SlideCaptchaTexts = {
 export type SlideCaptchaProps = SlideCaptchaClientOptions & {
   className?: string;
   disabled?: boolean;
+  theme?: SlideCaptchaTheme;
+  variant?: SlideCaptchaVariant;
   texts?: SlideCaptchaTexts;
   onSuccess?: (token: string) => void;
   onError?: (error: SlideCaptchaError) => void;
   onRefresh?: () => void;
+  onCancel?: () => void;
   onChange?: (state: SlideCaptchaState) => void;
 };

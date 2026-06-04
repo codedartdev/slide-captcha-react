@@ -1,18 +1,10 @@
 .scaptcha {
-  --scaptcha-bg: #ffffff;
-  --scaptcha-border: #d6dde6;
-  --scaptcha-text: #172033;
-  --scaptcha-muted: #5d6b82;
-  --scaptcha-primary: #1769aa;
-  --scaptcha-primary-hover: #11598f;
-  --scaptcha-success: #147d45;
-  --scaptcha-danger: #b42318;
-  --scaptcha-danger-bg: #fff3f0;
-  --scaptcha-focus: #f4b740;
+  --scaptcha-primary: #4f75ff;
+  --scaptcha-primary-hover: #6383ff;
+  --scaptcha-focus: #f59e0b;
+  --scaptcha-radius: 16px;
 
-  display: grid;
-  gap: 0.75rem;
-  width: min(100%, 420px);
+  width: min(100%, 390px);
   color: var(--scaptcha-text);
   font-family:
     Inter,
@@ -22,6 +14,81 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  letter-spacing: 0;
+}
+
+.scaptcha[data-theme='dark'] {
+  --scaptcha-bg: #0f1118;
+  --scaptcha-panel-soft: rgb(255 255 255 / 0.03);
+  --scaptcha-border: rgb(255 255 255 / 0.08);
+  --scaptcha-border-strong: rgb(255 255 255 / 0.12);
+  --scaptcha-divider: rgb(255 255 255 / 0.06);
+  --scaptcha-text: #f0f0f4;
+  --scaptcha-muted: #6b7280;
+  --scaptcha-soft: #9ca3af;
+  --scaptcha-subtle: #4b5563;
+  --scaptcha-rotation-icon: #374151;
+  --scaptcha-success: #22c55e;
+  --scaptcha-danger: #f87171;
+  --scaptcha-danger-bg: rgb(248 113 113 / 0.1);
+  --scaptcha-danger-border: rgb(248 113 113 / 0.24);
+  --scaptcha-stage-bg: #05081a;
+  --scaptcha-track: rgb(255 255 255 / 0.09);
+  --scaptcha-badge-bg: rgb(79 117 255 / 0.1);
+  --scaptcha-badge-border: rgb(79 117 255 / 0.21);
+  --scaptcha-icon-hover-bg: rgb(255 255 255 / 0.05);
+  --scaptcha-secondary-bg: rgb(255 255 255 / 0.05);
+  --scaptcha-secondary-hover-bg: rgb(255 255 255 / 0.08);
+  --scaptcha-secondary-hover-border: rgb(255 255 255 / 0.18);
+  --scaptcha-piece-border: rgb(255 255 255 / 0.35);
+  --scaptcha-piece-shadow: 0 4px 14px rgb(0 0 0 / 0.5);
+  --scaptcha-panel-shadow: 0 28px 72px rgb(0 0 0 / 0.68), 0 0 0 1px rgb(255 255 255 / 0.04);
+  --scaptcha-backdrop: rgb(0 0 0 / 0.62);
+}
+
+.scaptcha[data-theme='light'] {
+  --scaptcha-bg: #ffffff;
+  --scaptcha-panel-soft: #f8fafc;
+  --scaptcha-border: #d8e0ea;
+  --scaptcha-border-strong: #cbd5e1;
+  --scaptcha-divider: #e7edf5;
+  --scaptcha-text: #172033;
+  --scaptcha-muted: #667085;
+  --scaptcha-soft: #475467;
+  --scaptcha-subtle: #667085;
+  --scaptcha-rotation-icon: #98a2b3;
+  --scaptcha-success: #147d45;
+  --scaptcha-danger: #b42318;
+  --scaptcha-danger-bg: #fff3f0;
+  --scaptcha-danger-border: rgb(180 35 24 / 0.24);
+  --scaptcha-stage-bg: #f7f9fc;
+  --scaptcha-track: #e5eaf1;
+  --scaptcha-badge-bg: rgb(79 117 255 / 0.08);
+  --scaptcha-badge-border: rgb(79 117 255 / 0.18);
+  --scaptcha-icon-hover-bg: rgb(15 23 42 / 0.05);
+  --scaptcha-secondary-bg: #ffffff;
+  --scaptcha-secondary-hover-bg: #f8fafc;
+  --scaptcha-secondary-hover-border: #98a2b3;
+  --scaptcha-piece-border: rgb(255 255 255 / 0.85);
+  --scaptcha-piece-shadow: 0 8px 20px rgb(15 23 42 / 0.24);
+  --scaptcha-panel-shadow: 0 22px 48px rgb(15 23 42 / 0.16), 0 0 0 1px rgb(15 23 42 / 0.04);
+  --scaptcha-backdrop: rgb(15 23 42 / 0.42);
+}
+
+.scaptcha[data-variant='inline'] {
+  display: block;
+}
+
+.scaptcha[data-variant='modal'] {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  display: grid;
+  width: 100%;
+  max-width: none;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--scaptcha-backdrop);
 }
 
 .scaptcha *,
@@ -30,11 +97,146 @@
   box-sizing: border-box;
 }
 
-.scaptcha__status {
-  min-height: 1.25rem;
+.scaptcha svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+.scaptcha__panel {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--scaptcha-border);
+  border-radius: var(--scaptcha-radius);
+  background: var(--scaptcha-bg);
+  box-shadow: var(--scaptcha-panel-shadow);
+}
+
+.scaptcha[data-variant='modal'] .scaptcha__panel {
+  width: min(100%, 390px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+
+.scaptcha__accent {
+  height: 2px;
+  flex: 0 0 auto;
+  background: var(--scaptcha-divider);
+}
+
+.scaptcha__accent span {
+  display: block;
+  width: 23%;
+  max-width: 88px;
+  height: 100%;
+  background: var(--scaptcha-focus);
+}
+
+.scaptcha__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 18px 20px 14px;
+}
+
+.scaptcha__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.scaptcha__badge {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--scaptcha-badge-border);
+  border-radius: 9px;
+  background: var(--scaptcha-badge-bg);
+  color: var(--scaptcha-primary);
+  font-size: 15px;
+}
+
+.scaptcha__heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.scaptcha__title,
+.scaptcha__subtitle {
+  overflow-wrap: anywhere;
+}
+
+.scaptcha__title {
+  margin: 0;
+  color: var(--scaptcha-text);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.scaptcha__subtitle {
+  margin: 0;
   color: var(--scaptcha-muted);
-  font-size: 0.875rem;
-  line-height: 1.4;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.scaptcha__icon-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--scaptcha-muted);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.scaptcha__icon-button:hover:not(:disabled) {
+  background: var(--scaptcha-icon-hover-bg);
+  color: var(--scaptcha-soft);
+}
+
+.scaptcha__divider {
+  height: 1px;
+  margin: 0 20px;
+  background: var(--scaptcha-divider);
+}
+
+.scaptcha__body {
+  display: grid;
+  gap: 10px;
+  padding: 14px 20px 12px;
+}
+
+.scaptcha__status {
+  min-height: 1.05rem;
+  color: var(--scaptcha-subtle);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.scaptcha[data-status='loading'] .scaptcha__status,
+.scaptcha[data-status='verifying'] .scaptcha__status {
+  color: var(--scaptcha-muted);
+}
+
+.scaptcha[data-status='success'] .scaptcha__status {
+  color: var(--scaptcha-success);
 }
 
 .scaptcha__stage,
@@ -42,8 +244,8 @@
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--scaptcha-border);
-  border-radius: 8px;
-  background: #f7f9fc;
+  border-radius: 10px;
+  background: var(--scaptcha-stage-bg);
 }
 
 .scaptcha__stage {
@@ -53,11 +255,11 @@
 
 .scaptcha__placeholder {
   display: grid;
-  min-height: 180px;
+  min-height: 190px;
   place-items: center;
   padding: 1rem;
   color: var(--scaptcha-muted);
-  font-size: 0.9rem;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -74,9 +276,9 @@
   position: absolute;
   z-index: 2;
   display: block;
-  border: 1px solid rgb(255 255 255 / 0.65);
-  border-radius: 6px;
-  box-shadow: 0 8px 20px rgb(15 23 42 / 0.24);
+  border: 2px solid var(--scaptcha-piece-border);
+  border-radius: 999px;
+  box-shadow: var(--scaptcha-piece-shadow);
   cursor: grab;
   touch-action: none;
   transform-origin: center;
@@ -89,84 +291,80 @@
 
 .scaptcha__piece:focus-visible,
 .scaptcha__button:focus-visible,
+.scaptcha__cancel-button:focus-visible,
+.scaptcha__icon-button:focus-visible,
 .scaptcha__rotation-slider:focus-visible {
-  outline: 3px solid var(--scaptcha-focus);
+  outline: 2px solid var(--scaptcha-focus);
   outline-offset: 2px;
 }
 
 .scaptcha[data-status='success'] .scaptcha__piece {
   box-shadow:
-    0 0 0 3px rgb(20 125 69 / 0.28),
-    0 8px 20px rgb(15 23 42 / 0.2);
+    0 0 0 3px rgb(34 197 94 / 0.24),
+    var(--scaptcha-piece-shadow);
 }
 
 .scaptcha__error {
   display: grid;
   gap: 0.25rem;
-  border: 1px solid rgb(180 35 24 / 0.35);
-  border-radius: 8px;
+  margin: 0 20px 12px;
+  border: 1px solid var(--scaptcha-danger-border);
+  border-radius: 12px;
   padding: 0.75rem;
   background: var(--scaptcha-danger-bg);
   color: var(--scaptcha-danger);
-  font-size: 0.875rem;
+  font-size: 12px;
   line-height: 1.4;
 }
 
 .scaptcha__controls {
   display: grid;
-  gap: 0.625rem;
-}
-
-.scaptcha__main-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.scaptcha__main-controls {
-  justify-content: space-between;
+  gap: 12px;
+  padding: 0 20px 14px;
 }
 
 .scaptcha__rotation-control {
   display: grid;
-  gap: 0.55rem;
-  border: 1px solid rgb(214 221 230 / 0.9);
-  border-radius: 8px;
-  padding: 0.7rem 0.75rem 0.8rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  gap: 9px;
+  border: 1px solid var(--scaptcha-border);
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: var(--scaptcha-panel-soft);
 }
 
 .scaptcha__rotation-meta {
   display: flex;
+  min-height: 16.5px;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.scaptcha__rotation-label,
-.scaptcha__rotation-value {
-  font-size: 0.875rem;
-  line-height: 1.2;
-}
-
 .scaptcha__rotation-label {
   color: var(--scaptcha-muted);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
-.scaptcha__rotation-value {
-  min-width: 3.25rem;
-  border-radius: 999px;
-  padding: 0.25rem 0.5rem;
-  background: #eef4fb;
-  color: var(--scaptcha-primary);
-  font-weight: 700;
-  text-align: center;
+.scaptcha__rotation-hints {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--scaptcha-rotation-icon);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.scaptcha__rotation-hints span:nth-child(2) {
+  width: 1px;
+  height: 10px;
+  background: rgb(79 117 255 / 0.5);
 }
 
 .scaptcha__rotation-slider {
   width: 100%;
-  height: 1.75rem;
+  height: 24px;
   margin: 0;
   appearance: none;
   background: transparent;
@@ -179,77 +377,103 @@
 }
 
 .scaptcha__rotation-slider::-webkit-slider-runnable-track {
-  height: 0.5rem;
+  height: 6px;
   border-radius: 999px;
   background: linear-gradient(
     90deg,
-    var(--scaptcha-primary) 0%,
+    var(--scaptcha-track) 0%,
+    var(--scaptcha-track) var(--scaptcha-rotation-progress, 0%),
     var(--scaptcha-primary) var(--scaptcha-rotation-progress, 0%),
-    #dbe4ef var(--scaptcha-rotation-progress, 0%),
-    #dbe4ef 100%
+    var(--scaptcha-primary) calc(var(--scaptcha-rotation-progress, 0%) + 1px),
+    var(--scaptcha-track) calc(var(--scaptcha-rotation-progress, 0%) + 1px),
+    var(--scaptcha-track) 100%
   );
 }
 
 .scaptcha__rotation-slider::-webkit-slider-thumb {
-  width: 1.35rem;
-  height: 1.35rem;
-  margin-top: -0.425rem;
+  width: 2px;
+  height: 14px;
+  margin-top: -4px;
   appearance: none;
-  border: 3px solid #ffffff;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 1px;
   background: var(--scaptcha-primary);
-  box-shadow:
-    0 0 0 1px rgb(23 105 170 / 0.18),
-    0 6px 14px rgb(23 105 170 / 0.3);
+  box-shadow: 0 0 8px rgb(79 117 255 / 0.73);
 }
 
 .scaptcha__rotation-slider::-moz-range-track {
-  height: 0.5rem;
+  height: 6px;
   border-radius: 999px;
-  background: #dbe4ef;
+  background: var(--scaptcha-track);
 }
 
 .scaptcha__rotation-slider::-moz-range-progress {
-  height: 0.5rem;
+  height: 6px;
   border-radius: 999px;
   background: var(--scaptcha-primary);
 }
 
 .scaptcha__rotation-slider::-moz-range-thumb {
-  width: 1rem;
-  height: 1rem;
-  border: 3px solid #ffffff;
-  border-radius: 50%;
+  width: 2px;
+  height: 14px;
+  border: 0;
+  border-radius: 1px;
   background: var(--scaptcha-primary);
-  box-shadow:
-    0 0 0 1px rgb(23 105 170 / 0.18),
-    0 6px 14px rgb(23 105 170 / 0.3);
+  box-shadow: 0 0 8px rgb(79 117 255 / 0.73);
+}
+
+.scaptcha__main-controls {
+  display: flex;
+  gap: 10px;
 }
 
 .scaptcha__button {
-  min-height: 2.5rem;
-  border: 1px solid var(--scaptcha-border);
-  border-radius: 8px;
-  padding: 0.55rem 0.8rem;
-  background: var(--scaptcha-bg);
-  color: var(--scaptcha-text);
+  display: inline-flex;
+  min-width: 0;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--scaptcha-border-strong);
+  border-radius: 12px;
+  padding: 0 15px;
+  background: var(--scaptcha-secondary-bg);
+  color: var(--scaptcha-soft);
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
   cursor: pointer;
 }
 
-.scaptcha__button:hover:not(:disabled) {
-  border-color: #9aa8bb;
+.scaptcha__button svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
 }
 
-.scaptcha__button:disabled {
+.scaptcha__button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scaptcha__button:hover:not(:disabled) {
+  border-color: var(--scaptcha-secondary-hover-border);
+  background: var(--scaptcha-secondary-hover-bg);
+  color: var(--scaptcha-text);
+}
+
+.scaptcha__button:disabled,
+.scaptcha__cancel-button:disabled,
+.scaptcha__icon-button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }
 
 .scaptcha__button--primary {
+  flex: 1 1 auto;
   border-color: var(--scaptcha-primary);
   background: var(--scaptcha-primary);
   color: #ffffff;
@@ -258,10 +482,11 @@
 .scaptcha__button--primary:hover:not(:disabled) {
   border-color: var(--scaptcha-primary-hover);
   background: var(--scaptcha-primary-hover);
+  color: #ffffff;
 }
 
 .scaptcha__button--secondary {
-  color: var(--scaptcha-primary);
+  flex: 0 0 auto;
 }
 
 .scaptcha[data-status='success'] .scaptcha__button--primary {
@@ -269,9 +494,62 @@
   background: var(--scaptcha-success);
 }
 
+.scaptcha__cancel-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 1rem;
+  background: transparent;
+  color: var(--scaptcha-subtle);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.scaptcha__cancel-button:hover:not(:disabled) {
+  background: var(--scaptcha-icon-hover-bg);
+  color: var(--scaptcha-muted);
+}
+
+.scaptcha__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 @media (max-width: 420px) {
-  .scaptcha__button,
-  .scaptcha__main-controls {
+  .scaptcha[data-variant='inline'] {
     width: 100%;
+  }
+
+  .scaptcha[data-variant='modal'] {
+    padding: 16px;
+  }
+
+  .scaptcha__header {
+    padding-inline: 16px;
+  }
+
+  .scaptcha__divider {
+    margin-inline: 16px;
+  }
+
+  .scaptcha__body,
+  .scaptcha__controls {
+    padding-inline: 16px;
+  }
+
+  .scaptcha__error {
+    margin-inline: 16px;
+  }
+
+  .scaptcha__button {
+    padding-inline: 12px;
   }
 }

@@ -201,6 +201,24 @@ Use `className` e sobrescreva as variáveis CSS:
 <SlideCaptcha className="meu-captcha" />
 ```
 
+Escolha o tema com `theme="dark"` ou `theme="light"`. O padrão é `dark`:
+
+```tsx
+<SlideCaptcha theme="light" />
+```
+
+Escolha a apresentação com `variant="inline"` ou `variant="modal"`. O padrão é `inline`:
+
+```tsx
+<SlideCaptcha variant="inline" />
+```
+
+Para usar como modal, combine `variant="modal"` com `onCancel` para exibir as ações de fechar e cancelar:
+
+```tsx
+<SlideCaptcha variant="modal" theme="dark" onCancel={() => setCaptchaOpen(false)} />
+```
+
 ## Scripts
 
 ```bash
