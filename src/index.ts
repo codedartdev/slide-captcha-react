@@ -8,13 +8,16 @@ export type { UseSlideCaptchaOptions, UseSlideCaptchaReturn } from './hooks/useS
 export type {
   SlideCaptchaChallenge,
   SlideCaptchaClientOptions,
+  SlideCaptchaColorOverrides,
   SlideCaptchaFetch,
   SlideCaptchaHeaders,
   SlideCaptchaMovementPoint,
   SlideCaptchaProps,
   SlideCaptchaState,
   SlideCaptchaStatus,
+  SlideCaptchaTheme,
   SlideCaptchaTexts,
+  SlideCaptchaVariant,
   SlideCaptchaVerifyPayload,
   SlideCaptchaVerifyResponse,
 } from './client/types';

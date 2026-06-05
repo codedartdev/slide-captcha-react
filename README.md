@@ -201,23 +201,82 @@ Use `className` e sobrescreva as variáveis CSS:
 <SlideCaptcha className="meu-captcha" />
 ```
 
+Também é possível customizar as cores diretamente pelo componente com `colors`. Os valores aceitam qualquer cor CSS válida; os campos de sombra aceitam valores de `box-shadow`:
+
+```tsx
+<SlideCaptcha
+  variant="modal"
+  colors={{
+    background: '#10131a',
+    backdrop: 'rgb(0 0 0 / 0.72)',
+    border: 'rgb(255 255 255 / 0.12)',
+    primary: '#14b8a6',
+    primaryHover: '#2dd4bf',
+    primaryText: '#001a16',
+    text: '#f8fafc',
+    mutedText: '#94a3b8',
+    accent: '#facc15',
+    track: '#334155',
+  }}
+/>
+```
+
 Escolha o tema com `theme="dark"` ou `theme="light"`. O padrão é `dark`:
 
 ```tsx
 <SlideCaptcha theme="light" />
 ```
 
-Escolha a apresentação com `variant="inline"` ou `variant="modal"`. O padrão é `inline`:
+Escolha a apresentação com `variant="inline"` ou `variant="modal"`. O padrão é `inline`, que renderiza apenas o corpo funcional do CAPTCHA:
 
 ```tsx
 <SlideCaptcha variant="inline" />
 ```
 
-Para usar como modal, combine `variant="modal"` com `onCancel` para exibir as ações de fechar e cancelar:
+Para usar a experiência completa de modal, combine `variant="modal"` com `onCancel` para exibir cabeçalho, fechar e cancelar:
 
 ```tsx
 <SlideCaptcha variant="modal" theme="dark" onCancel={() => setCaptchaOpen(false)} />
 ```
+
+Chaves disponíveis em `colors` e suas variáveis CSS equivalentes:
+
+| `colors`                         | Variável CSS                        | Elemento                          |
+| -------------------------------- | ----------------------------------- | --------------------------------- |
+| `accent`                         | `--scaptcha-accent`                 | Barra superior do modal           |
+| `background`                     | `--scaptcha-bg`                     | Fundo do painel                   |
+| `backdrop`                       | `--scaptcha-backdrop`               | Fundo externo do modal            |
+| `badgeBackground`                | `--scaptcha-badge-bg`               | Fundo do badge do header          |
+| `badgeBorder`                    | `--scaptcha-badge-border`           | Borda do badge do header          |
+| `border`                         | `--scaptcha-border`                 | Bordas gerais                     |
+| `borderStrong`                   | `--scaptcha-border-strong`          | Bordas de controles destacados    |
+| `danger`                         | `--scaptcha-danger`                 | Texto de erro                     |
+| `dangerBackground`               | `--scaptcha-danger-bg`              | Fundo de erro                     |
+| `dangerBorder`                   | `--scaptcha-danger-border`          | Borda de erro                     |
+| `divider`                        | `--scaptcha-divider`                | Divisores internos                |
+| `focus`                          | `--scaptcha-focus`                  | Contorno de foco                  |
+| `iconHoverBackground`            | `--scaptcha-icon-hover-bg`          | Hover de botões de ícone          |
+| `mutedText`                      | `--scaptcha-muted`                  | Texto secundário                  |
+| `panelShadow`                    | `--scaptcha-panel-shadow`           | Sombra do painel                  |
+| `panelSoftBackground`            | `--scaptcha-panel-soft`             | Fundo do controle de rotação      |
+| `pieceBorder`                    | `--scaptcha-piece-border`           | Borda da peça                     |
+| `pieceShadow`                    | `--scaptcha-piece-shadow`           | Sombra da peça                    |
+| `primary`                        | `--scaptcha-primary`                | Botão principal e destaque        |
+| `primaryHover`                   | `--scaptcha-primary-hover`          | Hover do botão principal          |
+| `primaryText`                    | `--scaptcha-primary-text`           | Texto do botão principal          |
+| `rotationDivider`                | `--scaptcha-rotation-divider`       | Divisor dos ícones de rotação     |
+| `rotationIcon`                   | `--scaptcha-rotation-icon`          | Ícones de rotação                 |
+| `rotationThumbShadow`            | `--scaptcha-rotation-thumb-shadow`  | Brilho do marcador do slider      |
+| `secondaryButtonBackground`      | `--scaptcha-secondary-bg`           | Fundo do botão secundário         |
+| `secondaryButtonHoverBackground` | `--scaptcha-secondary-hover-bg`     | Hover do botão secundário         |
+| `secondaryButtonHoverBorder`     | `--scaptcha-secondary-hover-border` | Borda hover do botão secundário   |
+| `softText`                       | `--scaptcha-soft`                   | Texto de controles secundários    |
+| `stageBackground`                | `--scaptcha-stage-bg`               | Fundo da área da imagem           |
+| `subtleText`                     | `--scaptcha-subtle`                 | Texto discreto, status e cancelar |
+| `success`                        | `--scaptcha-success`                | Estado resolvido                  |
+| `successRing`                    | `--scaptcha-success-ring`           | Destaque da peça resolvida        |
+| `text`                           | `--scaptcha-text`                   | Texto principal                   |
+| `track`                          | `--scaptcha-track`                  | Trilha do slider                  |
 
 ## Scripts
 

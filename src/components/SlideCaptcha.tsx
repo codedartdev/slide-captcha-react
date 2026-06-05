@@ -3,6 +3,7 @@ import type { ChangeEvent, CSSProperties, KeyboardEvent, PointerEvent } from 're
 import { useSlideCaptcha } from '../hooks/useSlideCaptcha';
 import type {
   SlideCaptchaChallenge,
+  SlideCaptchaColorOverrides,
   SlideCaptchaMovementPoint,
   SlideCaptchaProps,
   SlideCaptchaTexts,
@@ -27,6 +28,43 @@ const DEFAULT_TEXTS: Required<SlideCaptchaTexts> = {
   backgroundAlt: 'Imagem do desafio CAPTCHA',
 };
 
+const COLOR_VARIABLES: Record<keyof SlideCaptchaColorOverrides, string> = {
+  accent: '--scaptcha-accent',
+  background: '--scaptcha-bg',
+  backdrop: '--scaptcha-backdrop',
+  badgeBackground: '--scaptcha-badge-bg',
+  badgeBorder: '--scaptcha-badge-border',
+  border: '--scaptcha-border',
+  borderStrong: '--scaptcha-border-strong',
+  danger: '--scaptcha-danger',
+  dangerBackground: '--scaptcha-danger-bg',
+  dangerBorder: '--scaptcha-danger-border',
+  divider: '--scaptcha-divider',
+  focus: '--scaptcha-focus',
+  iconHoverBackground: '--scaptcha-icon-hover-bg',
+  mutedText: '--scaptcha-muted',
+  panelShadow: '--scaptcha-panel-shadow',
+  panelSoftBackground: '--scaptcha-panel-soft',
+  pieceBorder: '--scaptcha-piece-border',
+  pieceShadow: '--scaptcha-piece-shadow',
+  primary: '--scaptcha-primary',
+  primaryHover: '--scaptcha-primary-hover',
+  primaryText: '--scaptcha-primary-text',
+  rotationDivider: '--scaptcha-rotation-divider',
+  rotationIcon: '--scaptcha-rotation-icon',
+  rotationThumbShadow: '--scaptcha-rotation-thumb-shadow',
+  secondaryButtonBackground: '--scaptcha-secondary-bg',
+  secondaryButtonHoverBackground: '--scaptcha-secondary-hover-bg',
+  secondaryButtonHoverBorder: '--scaptcha-secondary-hover-border',
+  softText: '--scaptcha-soft',
+  stageBackground: '--scaptcha-stage-bg',
+  subtleText: '--scaptcha-subtle',
+  success: '--scaptcha-success',
+  successRing: '--scaptcha-success-ring',
+  text: '--scaptcha-text',
+  track: '--scaptcha-track',
+};
+
 type DragState = {
   pointerId: number;
   offsetX: number;
@@ -46,6 +84,7 @@ export function SlideCaptcha({
   disabled = false,
   theme = 'dark',
   variant = 'inline',
+  colors,
   texts,
   onSuccess,
   onError,
@@ -54,6 +93,7 @@ export function SlideCaptcha({
   onChange,
 }: SlideCaptchaProps) {
   const resolvedTexts = useMemo(() => ({ ...DEFAULT_TEXTS, ...texts }), [texts]);
+  const colorStyle = useMemo(() => getColorStyle(colors), [colors]);
   const titleId = useId();
   const subtitleId = useId();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -103,10 +143,11 @@ export function SlideCaptcha({
 
   const addMovement = useCallback(
     (x: number, y: number, rotation: number) => {
+      const signedRotation = getSignedRotation(rotation);
       const point: SlideCaptchaMovementPoint = {
         x: roundCoordinate(x),
         y: roundCoordinate(y),
-        r: normalizeRotation(rotation),
+        r: normalizeRotation(signedRotation),
         t: Math.max(0, Math.round(now() - interactionStartedAtRef.current)),
       };
 
@@ -114,7 +155,7 @@ export function SlideCaptcha({
         ...currentState,
         x: point.x,
         y: point.y,
-        rotation: point.r,
+        rotation: signedRotation,
         movements: [...currentState.movements, point],
         token: null,
         error: null,
@@ -324,15 +365,20 @@ export function SlideCaptcha({
   const pieceUrl = challenge ? resolveAssetUrl(challenge.piece_url, baseUrl) : undefined;
   const rotationStep =
     challenge?.rotation_step && challenge.rotation_step > 0 ? challenge.rotation_step : 1;
-  const rotationMax = challenge ? getRotationSliderMax(challenge.rotation_step) : 0;
+  const rotationLimit = challenge ? getRotationSliderLimit(challenge.rotation_step) : 0;
   const rotationSliderValue =
-    rotationMax > 0 ? clamp(normalizeRotation(state.rotation), 0, rotationMax) : 0;
-  const rotationProgress = rotationMax > 0 ? (rotationSliderValue / rotationMax) * 100 : 0;
+    rotationLimit > 0 ? clamp(getSignedRotation(state.rotation), -rotationLimit, rotationLimit) : 0;
+  const rotationProgress =
+    rotationLimit > 0 ? ((rotationSliderValue + rotationLimit) / (rotationLimit * 2)) * 100 : 50;
+  const rotationTrackStart = Math.min(50, rotationProgress);
+  const rotationTrackEnd = Math.max(50, rotationProgress);
   const rotationValueText = formatRotation(rotationSliderValue);
   const rotationSliderStyle = {
     '--scaptcha-rotation-progress': `${rotationProgress}%`,
+    '--scaptcha-rotation-start': `${rotationTrackStart}%`,
+    '--scaptcha-rotation-end': `${rotationTrackEnd}%`,
   } as CSSProperties;
-  const canRotate = canInteract && rotationMax > 0;
+  const canRotate = canInteract && rotationLimit > 0;
   const stageStyle = challenge
     ? {
         aspectRatio: `${challenge.image_width} / ${challenge.image_height}`,
@@ -348,6 +394,113 @@ export function SlideCaptcha({
       }
     : undefined;
 
+  const captchaBody = (
+    <>
+      <div className="scaptcha__body">
+        <div className="scaptcha__status" aria-live="polite">
+          {getStatusText(state.status, resolvedTexts)}
+        </div>
+
+        {challenge ? (
+          <div className="scaptcha__stage" ref={stageRef} style={stageStyle}>
+            <img
+              className="scaptcha__background"
+              src={backgroundUrl}
+              alt={resolvedTexts.backgroundAlt}
+              draggable={false}
+            />
+            <img
+              className="scaptcha__piece"
+              src={pieceUrl}
+              alt={resolvedTexts.pieceAlt}
+              role="button"
+              tabIndex={canInteract ? 0 : -1}
+              aria-label={resolvedTexts.dragInstructions}
+              aria-disabled={!canInteract}
+              draggable={false}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishDragging}
+              onPointerCancel={finishDragging}
+              onKeyDown={handleKeyDown}
+              style={pieceStyle}
+            />
+          </div>
+        ) : (
+          <div className="scaptcha__placeholder">{resolvedTexts.challengeUnavailable}</div>
+        )}
+      </div>
+
+      {state.error ? (
+        <div className="scaptcha__error" role="alert">
+          <strong>{resolvedTexts.errorTitle}</strong>
+          <span>{state.error.message}</span>
+        </div>
+      ) : null}
+
+      <div className="scaptcha__controls">
+        {challenge?.rotation_enabled ? (
+          <div className="scaptcha__rotation-control">
+            <div className="scaptcha__rotation-meta">
+              <span className="scaptcha__rotation-label">{resolvedTexts.rotationLabel}</span>
+              <span className="scaptcha__rotation-hints" aria-hidden="true">
+                <span>↺</span>
+                <span />
+                <span>↻</span>
+              </span>
+              <output className="scaptcha__sr-only">{rotationValueText}</output>
+            </div>
+            <input
+              className="scaptcha__rotation-slider"
+              type="range"
+              min={-rotationLimit}
+              max={rotationLimit}
+              step={rotationStep}
+              value={rotationSliderValue}
+              onChange={handleRotationChange}
+              disabled={!canRotate}
+              aria-label={resolvedTexts.rotationLabel}
+              aria-valuetext={rotationValueText}
+              style={rotationSliderStyle}
+            />
+          </div>
+        ) : null}
+
+        <div className="scaptcha__main-controls">
+          <button
+            className="scaptcha__button scaptcha__button--secondary"
+            type="button"
+            onClick={handleRefresh}
+            disabled={disabled || isBusy}
+          >
+            <RefreshIcon />
+            <span>{resolvedTexts.refresh}</span>
+          </button>
+          <button
+            className="scaptcha__button scaptcha__button--primary"
+            type="button"
+            onClick={handleVerify}
+            disabled={!challenge || disabled || isBusy || isSolved || state.status === 'error'}
+          >
+            <ShieldIcon />
+            <span>{isSolved ? resolvedTexts.verified : resolvedTexts.verify}</span>
+          </button>
+        </div>
+
+        {variant === 'modal' && onCancel ? (
+          <button
+            className="scaptcha__cancel-button"
+            type="button"
+            onClick={handleCancel}
+            disabled={disabled}
+          >
+            {resolvedTexts.cancel}
+          </button>
+        ) : null}
+      </div>
+    </>
+  );
+
   return (
     <div
       className={rootClassName}
@@ -355,6 +508,7 @@ export function SlideCaptcha({
       data-theme={theme}
       data-variant={variant}
       aria-busy={isBusy}
+      style={colorStyle}
     >
       <div
         className="scaptcha__panel"
@@ -363,142 +517,45 @@ export function SlideCaptcha({
         aria-labelledby={variant === 'modal' ? titleId : undefined}
         aria-describedby={variant === 'modal' ? subtitleId : undefined}
       >
-        <div className="scaptcha__accent" aria-hidden="true">
-          <span />
-        </div>
-
-        <div className="scaptcha__header">
-          <div className="scaptcha__heading">
-            <span className="scaptcha__badge" aria-hidden="true">
-              <ShieldIcon />
-            </span>
-            <div className="scaptcha__heading-copy">
-              <h2 className="scaptcha__title" id={titleId}>
-                {resolvedTexts.title}
-              </h2>
-              <p className="scaptcha__subtitle" id={subtitleId}>
-                {resolvedTexts.subtitle}
-              </p>
+        {variant === 'modal' ? (
+          <>
+            <div className="scaptcha__accent" aria-hidden="true">
+              <span />
             </div>
-          </div>
 
-          {onCancel ? (
-            <button
-              className="scaptcha__icon-button"
-              type="button"
-              onClick={handleCancel}
-              disabled={disabled}
-              aria-label={resolvedTexts.close}
-            >
-              <CloseIcon />
-            </button>
-          ) : null}
-        </div>
+            <div className="scaptcha__header">
+              <div className="scaptcha__heading">
+                <span className="scaptcha__badge" aria-hidden="true">
+                  <ShieldIcon />
+                </span>
+                <div className="scaptcha__heading-copy">
+                  <h2 className="scaptcha__title" id={titleId}>
+                    {resolvedTexts.title}
+                  </h2>
+                  <p className="scaptcha__subtitle" id={subtitleId}>
+                    {resolvedTexts.subtitle}
+                  </p>
+                </div>
+              </div>
 
-        <div className="scaptcha__divider" aria-hidden="true" />
-
-        <div className="scaptcha__body">
-          <div className="scaptcha__status" aria-live="polite">
-            {getStatusText(state.status, resolvedTexts)}
-          </div>
-
-          {challenge ? (
-            <div className="scaptcha__stage" ref={stageRef} style={stageStyle}>
-              <img
-                className="scaptcha__background"
-                src={backgroundUrl}
-                alt={resolvedTexts.backgroundAlt}
-                draggable={false}
-              />
-              <img
-                className="scaptcha__piece"
-                src={pieceUrl}
-                alt={resolvedTexts.pieceAlt}
-                role="button"
-                tabIndex={canInteract ? 0 : -1}
-                aria-label={resolvedTexts.dragInstructions}
-                aria-disabled={!canInteract}
-                draggable={false}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={finishDragging}
-                onPointerCancel={finishDragging}
-                onKeyDown={handleKeyDown}
-                style={pieceStyle}
-              />
+              {onCancel ? (
+                <button
+                  className="scaptcha__icon-button"
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={disabled}
+                  aria-label={resolvedTexts.close}
+                >
+                  <CloseIcon />
+                </button>
+              ) : null}
             </div>
-          ) : (
-            <div className="scaptcha__placeholder">{resolvedTexts.challengeUnavailable}</div>
-          )}
-        </div>
 
-        {state.error ? (
-          <div className="scaptcha__error" role="alert">
-            <strong>{resolvedTexts.errorTitle}</strong>
-            <span>{state.error.message}</span>
-          </div>
+            <div className="scaptcha__divider" aria-hidden="true" />
+          </>
         ) : null}
 
-        <div className="scaptcha__controls">
-          {challenge?.rotation_enabled ? (
-            <div className="scaptcha__rotation-control">
-              <div className="scaptcha__rotation-meta">
-                <span className="scaptcha__rotation-label">{resolvedTexts.rotationLabel}</span>
-                <span className="scaptcha__rotation-hints" aria-hidden="true">
-                  <span>↺</span>
-                  <span />
-                  <span>↻</span>
-                </span>
-                <output className="scaptcha__sr-only">{rotationValueText}</output>
-              </div>
-              <input
-                className="scaptcha__rotation-slider"
-                type="range"
-                min={0}
-                max={rotationMax}
-                step={rotationStep}
-                value={rotationSliderValue}
-                onChange={handleRotationChange}
-                disabled={!canRotate}
-                aria-label={resolvedTexts.rotationLabel}
-                aria-valuetext={rotationValueText}
-                style={rotationSliderStyle}
-              />
-            </div>
-          ) : null}
-
-          <div className="scaptcha__main-controls">
-            <button
-              className="scaptcha__button scaptcha__button--secondary"
-              type="button"
-              onClick={handleRefresh}
-              disabled={disabled || isBusy}
-            >
-              <RefreshIcon />
-              <span>{resolvedTexts.refresh}</span>
-            </button>
-            <button
-              className="scaptcha__button scaptcha__button--primary"
-              type="button"
-              onClick={handleVerify}
-              disabled={!challenge || disabled || isBusy || isSolved || state.status === 'error'}
-            >
-              <ShieldIcon />
-              <span>{isSolved ? resolvedTexts.verified : resolvedTexts.verify}</span>
-            </button>
-          </div>
-
-          {onCancel ? (
-            <button
-              className="scaptcha__cancel-button"
-              type="button"
-              onClick={handleCancel}
-              disabled={disabled}
-            >
-              {resolvedTexts.cancel}
-            </button>
-          ) : null}
-        </div>
+        {captchaBody}
       </div>
     </div>
   );
@@ -541,16 +598,26 @@ function normalizeRotation(value: number): number {
   return rotation < 0 ? rotation + 360 : rotation;
 }
 
-function getRotationSliderMax(rotationStep: number): number {
-  if (rotationStep <= 0 || rotationStep >= 360) {
+function getSignedRotation(value: number): number {
+  const rotation = normalizeRotation(value);
+
+  if (rotation === 180 && value < 0) {
+    return -180;
+  }
+
+  return rotation > 180 ? rotation - 360 : rotation;
+}
+
+function getRotationSliderLimit(rotationStep: number): number {
+  if (rotationStep <= 0 || rotationStep > 180) {
     return 0;
   }
 
-  return Math.floor(359 / rotationStep) * rotationStep;
+  return Math.floor(180 / rotationStep) * rotationStep;
 }
 
 function formatRotation(value: number): string {
-  const rotation = normalizeRotation(value);
+  const rotation = getSignedRotation(value);
   const formatted = Number.isInteger(rotation)
     ? String(rotation)
     : String(Number(rotation.toFixed(1)));
@@ -592,6 +659,24 @@ function ensureTrailingSlash(url: string): string {
 
 function now(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function getColorStyle(colors?: SlideCaptchaColorOverrides): CSSProperties | undefined {
+  if (!colors) {
+    return undefined;
+  }
+
+  const style: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(colors) as Array<
+    [keyof SlideCaptchaColorOverrides, string | undefined]
+  >) {
+    if (value) {
+      style[COLOR_VARIABLES[key]] = value;
+    }
+  }
+
+  return Object.keys(style).length > 0 ? (style as CSSProperties) : undefined;
 }
 
 function ShieldIcon() {

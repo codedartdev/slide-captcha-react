@@ -73,6 +73,43 @@ export type SlideCaptchaTheme = 'dark' | 'light';
 
 export type SlideCaptchaVariant = 'inline' | 'modal';
 
+export type SlideCaptchaColorOverrides = {
+  accent?: string;
+  background?: string;
+  backdrop?: string;
+  badgeBackground?: string;
+  badgeBorder?: string;
+  border?: string;
+  borderStrong?: string;
+  danger?: string;
+  dangerBackground?: string;
+  dangerBorder?: string;
+  divider?: string;
+  focus?: string;
+  iconHoverBackground?: string;
+  mutedText?: string;
+  panelShadow?: string;
+  panelSoftBackground?: string;
+  pieceBorder?: string;
+  pieceShadow?: string;
+  primary?: string;
+  primaryHover?: string;
+  primaryText?: string;
+  rotationDivider?: string;
+  rotationIcon?: string;
+  rotationThumbShadow?: string;
+  secondaryButtonBackground?: string;
+  secondaryButtonHoverBackground?: string;
+  secondaryButtonHoverBorder?: string;
+  softText?: string;
+  stageBackground?: string;
+  subtleText?: string;
+  success?: string;
+  successRing?: string;
+  text?: string;
+  track?: string;
+};
+
 export type SlideCaptchaTexts = {
   loading?: string;
   dragInstructions?: string;
@@ -97,6 +134,7 @@ export type SlideCaptchaProps = SlideCaptchaClientOptions & {
   disabled?: boolean;
   theme?: SlideCaptchaTheme;
   variant?: SlideCaptchaVariant;
+  colors?: SlideCaptchaColorOverrides;
   texts?: SlideCaptchaTexts;
   onSuccess?: (token: string) => void;
   onError?: (error: SlideCaptchaError) => void;

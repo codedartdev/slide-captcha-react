@@ -1,7 +1,9 @@
 .scaptcha {
   --scaptcha-primary: #4f75ff;
   --scaptcha-primary-hover: #6383ff;
+  --scaptcha-primary-text: #ffffff;
   --scaptcha-focus: #f59e0b;
+  --scaptcha-accent: var(--scaptcha-focus);
   --scaptcha-radius: 16px;
 
   width: min(100%, 390px);
@@ -29,11 +31,14 @@
   --scaptcha-subtle: #4b5563;
   --scaptcha-rotation-icon: #374151;
   --scaptcha-success: #22c55e;
+  --scaptcha-success-ring: rgb(34 197 94 / 0.24);
   --scaptcha-danger: #f87171;
   --scaptcha-danger-bg: rgb(248 113 113 / 0.1);
   --scaptcha-danger-border: rgb(248 113 113 / 0.24);
   --scaptcha-stage-bg: #05081a;
   --scaptcha-track: rgb(255 255 255 / 0.09);
+  --scaptcha-rotation-divider: rgb(79 117 255 / 0.5);
+  --scaptcha-rotation-thumb-shadow: 0 0 8px rgb(79 117 255 / 0.73);
   --scaptcha-badge-bg: rgb(79 117 255 / 0.1);
   --scaptcha-badge-border: rgb(79 117 255 / 0.21);
   --scaptcha-icon-hover-bg: rgb(255 255 255 / 0.05);
@@ -58,11 +63,14 @@
   --scaptcha-subtle: #667085;
   --scaptcha-rotation-icon: #98a2b3;
   --scaptcha-success: #147d45;
+  --scaptcha-success-ring: rgb(20 125 69 / 0.24);
   --scaptcha-danger: #b42318;
   --scaptcha-danger-bg: #fff3f0;
   --scaptcha-danger-border: rgb(180 35 24 / 0.24);
   --scaptcha-stage-bg: #f7f9fc;
   --scaptcha-track: #e5eaf1;
+  --scaptcha-rotation-divider: rgb(79 117 255 / 0.36);
+  --scaptcha-rotation-thumb-shadow: 0 0 8px rgb(79 117 255 / 0.42);
   --scaptcha-badge-bg: rgb(79 117 255 / 0.08);
   --scaptcha-badge-border: rgb(79 117 255 / 0.18);
   --scaptcha-icon-hover-bg: rgb(15 23 42 / 0.05);
@@ -131,7 +139,7 @@
   width: 23%;
   max-width: 88px;
   height: 100%;
-  background: var(--scaptcha-focus);
+  background: var(--scaptcha-accent);
 }
 
 .scaptcha__header {
@@ -300,7 +308,7 @@
 
 .scaptcha[data-status='success'] .scaptcha__piece {
   box-shadow:
-    0 0 0 3px rgb(34 197 94 / 0.24),
+    0 0 0 3px var(--scaptcha-success-ring),
     var(--scaptcha-piece-shadow);
 }
 
@@ -359,7 +367,7 @@
 .scaptcha__rotation-hints span:nth-child(2) {
   width: 1px;
   height: 10px;
-  background: rgb(79 117 255 / 0.5);
+  background: var(--scaptcha-rotation-divider);
 }
 
 .scaptcha__rotation-slider {
@@ -382,10 +390,10 @@
   background: linear-gradient(
     90deg,
     var(--scaptcha-track) 0%,
-    var(--scaptcha-track) var(--scaptcha-rotation-progress, 0%),
-    var(--scaptcha-primary) var(--scaptcha-rotation-progress, 0%),
-    var(--scaptcha-primary) calc(var(--scaptcha-rotation-progress, 0%) + 1px),
-    var(--scaptcha-track) calc(var(--scaptcha-rotation-progress, 0%) + 1px),
+    var(--scaptcha-track) var(--scaptcha-rotation-start, 50%),
+    var(--scaptcha-primary) var(--scaptcha-rotation-start, 50%),
+    var(--scaptcha-primary) var(--scaptcha-rotation-end, 50%),
+    var(--scaptcha-track) var(--scaptcha-rotation-end, 50%),
     var(--scaptcha-track) 100%
   );
 }
@@ -398,19 +406,27 @@
   border: 0;
   border-radius: 1px;
   background: var(--scaptcha-primary);
-  box-shadow: 0 0 8px rgb(79 117 255 / 0.73);
+  box-shadow: var(--scaptcha-rotation-thumb-shadow);
 }
 
 .scaptcha__rotation-slider::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: var(--scaptcha-track);
+  background: linear-gradient(
+    90deg,
+    var(--scaptcha-track) 0%,
+    var(--scaptcha-track) var(--scaptcha-rotation-start, 50%),
+    var(--scaptcha-primary) var(--scaptcha-rotation-start, 50%),
+    var(--scaptcha-primary) var(--scaptcha-rotation-end, 50%),
+    var(--scaptcha-track) var(--scaptcha-rotation-end, 50%),
+    var(--scaptcha-track) 100%
+  );
 }
 
 .scaptcha__rotation-slider::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: var(--scaptcha-primary);
+  background: transparent;
 }
 
 .scaptcha__rotation-slider::-moz-range-thumb {
@@ -419,7 +435,7 @@
   border: 0;
   border-radius: 1px;
   background: var(--scaptcha-primary);
-  box-shadow: 0 0 8px rgb(79 117 255 / 0.73);
+  box-shadow: var(--scaptcha-rotation-thumb-shadow);
 }
 
 .scaptcha__main-controls {
@@ -476,13 +492,13 @@
   flex: 1 1 auto;
   border-color: var(--scaptcha-primary);
   background: var(--scaptcha-primary);
-  color: #ffffff;
+  color: var(--scaptcha-primary-text);
 }
 
 .scaptcha__button--primary:hover:not(:disabled) {
   border-color: var(--scaptcha-primary-hover);
   background: var(--scaptcha-primary-hover);
-  color: #ffffff;
+  color: var(--scaptcha-primary-text);
 }
 
 .scaptcha__button--secondary {
