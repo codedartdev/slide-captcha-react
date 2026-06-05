@@ -1,6 +1,6 @@
 {
   "name": "@codedartdev/slide-captcha-react",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "React components and TypeScript client for Laravel Slide CAPTCHA.",
   "license": "MIT",
   "type": "module",
