@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SlideCaptcha } from '../src/components/SlideCaptcha';
 
 const challenge = {
@@ -23,7 +23,114 @@ function jsonResponse(data: unknown) {
   });
 }
 
+type MockImageRecord = {
+  image: {
+    onload: ((event: Event) => void) | null;
+    onerror: ((event: Event) => void) | null;
+    src: string;
+  };
+};
+
+function mockImageLoader({ autoResolve = true } = {}) {
+  const pending: MockImageRecord[] = [];
+
+  class MockImage {
+    onload: ((event: Event) => void) | null = null;
+    onerror: ((event: Event) => void) | null = null;
+    decoding: HTMLImageElement['decoding'] = 'auto';
+    fetchPriority?: 'high' | 'low' | 'auto';
+    #src = '';
+
+    decode = vi.fn(() => Promise.resolve());
+
+    get src() {
+      return this.#src;
+    }
+
+    set src(value: string) {
+      this.#src = value;
+      const record = { image: this };
+      pending.push(record);
+
+      if (autoResolve) {
+        queueMicrotask(() => {
+          record.image.onload?.(new Event('load'));
+        });
+      }
+    }
+  }
+
+  vi.stubGlobal('Image', MockImage);
+
+  return {
+    pending,
+    resolveAll() {
+      for (const record of pending) {
+        record.image.onload?.(new Event('load'));
+      }
+    },
+  };
+}
+
+async function waitForCaptchaReady() {
+  const background = await screen.findByAltText('Imagem do desafio CAPTCHA');
+  const piece = await screen.findByAltText('Peça do CAPTCHA');
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Verificar CAPTCHA' })).toBeEnabled();
+  });
+
+  return { background, piece };
+}
+
 describe('SlideCaptcha', () => {
+  beforeEach(() => {
+    mockImageLoader();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('shows loading feedback while the challenge is not available yet', async () => {
+    let resolveChallenge!: (response: Response) => void;
+    const fetcher = vi.fn<typeof fetch>(
+      () =>
+        new Promise((resolve) => {
+          resolveChallenge = resolve;
+        }),
+    );
+
+    render(<SlideCaptcha fetcher={fetcher} />);
+
+    expect(screen.getAllByText('Carregando CAPTCHA...')).toHaveLength(2);
+    expect(screen.queryByText('Desafio indisponível.')).not.toBeInTheDocument();
+
+    resolveChallenge(jsonResponse(challenge));
+
+    expect(await screen.findByAltText('Imagem do desafio CAPTCHA')).toBeInTheDocument();
+  });
+
+  it('preloads challenge images before rendering the challenge', async () => {
+    vi.unstubAllGlobals();
+    const imageLoader = mockImageLoader({ autoResolve: false });
+    const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
+
+    render(<SlideCaptcha fetcher={fetcher} />);
+
+    await waitFor(() => {
+      expect(imageLoader.pending).toHaveLength(2);
+    });
+
+    expect(screen.queryByAltText('Imagem do desafio CAPTCHA')).not.toBeInTheDocument();
+    expect(screen.queryByAltText('Peça do CAPTCHA')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Carregando CAPTCHA...')).toHaveLength(2);
+
+    imageLoader.resolveAll();
+
+    await waitForCaptchaReady();
+  });
+
   it('loads a challenge and calls onSuccess after verification', async () => {
     const onSuccess = vi.fn();
     const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
@@ -39,7 +146,8 @@ describe('SlideCaptcha', () => {
     expect(container.firstElementChild?.getAttribute('data-theme')).toBe('dark');
     expect(container.firstElementChild?.getAttribute('data-variant')).toBe('inline');
 
-    const verifyButton = await screen.findByRole('button', { name: 'Verificar CAPTCHA' });
+    await waitForCaptchaReady();
+    const verifyButton = screen.getByRole('button', { name: 'Verificar CAPTCHA' });
     fireEvent.click(verifyButton);
 
     await waitFor(() => {
@@ -75,7 +183,8 @@ describe('SlideCaptcha', () => {
 
     render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
 
-    const rotationSlider = await screen.findByRole('slider', { name: 'Ajustar rotação' });
+    await waitForCaptchaReady();
+    const rotationSlider = screen.getByRole('slider', { name: 'Ajustar rotação' });
     expect((rotationSlider as HTMLInputElement).value).toBe('0');
     expect(rotationSlider).toHaveAttribute('min', '-180');
     expect(rotationSlider).toHaveAttribute('max', '180');
@@ -116,7 +225,8 @@ describe('SlideCaptcha', () => {
 
     render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
 
-    const rotationSlider = await screen.findByRole('slider', { name: 'Ajustar rotação' });
+    await waitForCaptchaReady();
+    const rotationSlider = screen.getByRole('slider', { name: 'Ajustar rotação' });
     fireEvent.change(rotationSlider, { target: { value: '-30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Verificar CAPTCHA' }));
 

@@ -264,11 +264,18 @@
 .scaptcha__placeholder {
   display: grid;
   min-height: 190px;
+  align-content: center;
+  gap: 9px;
+  justify-items: center;
   place-items: center;
   padding: 1rem;
   color: var(--scaptcha-muted);
   font-size: 12px;
   text-align: center;
+}
+
+.scaptcha__placeholder[data-state='loading'] {
+  color: var(--scaptcha-soft);
 }
 
 .scaptcha__background {
@@ -277,6 +284,7 @@
   height: 100%;
   object-fit: cover;
   pointer-events: none;
+  transition: opacity 160ms ease;
   user-select: none;
 }
 
@@ -288,9 +296,34 @@
   border-radius: 999px;
   box-shadow: var(--scaptcha-piece-shadow);
   cursor: grab;
+  opacity: 1;
   touch-action: none;
+  transition: opacity 160ms ease;
   transform-origin: center;
   user-select: none;
+}
+
+.scaptcha__stage[data-assets='loading'] .scaptcha__background,
+.scaptcha__stage[data-assets='loading'] .scaptcha__piece {
+  opacity: 0;
+}
+
+.scaptcha__stage-loader {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--scaptcha-stage-bg);
+}
+
+.scaptcha__loader {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--scaptcha-border-strong);
+  border-radius: 999px;
+  border-top-color: var(--scaptcha-primary);
+  animation: scaptcha-spin 700ms linear infinite;
 }
 
 .scaptcha__piece:active {
@@ -537,6 +570,23 @@
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+@keyframes scaptcha-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scaptcha__background,
+  .scaptcha__piece {
+    transition: none;
+  }
+
+  .scaptcha__loader {
+    animation: none;
+  }
 }
 
 @media (max-width: 420px) {

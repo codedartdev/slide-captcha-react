@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, KeyboardEvent, PointerEvent } from 'react';
 import { useSlideCaptcha } from '../hooks/useSlideCaptcha';
 import type {
@@ -6,6 +6,7 @@ import type {
   SlideCaptchaColorOverrides,
   SlideCaptchaMovementPoint,
   SlideCaptchaProps,
+  SlideCaptchaStatus,
   SlideCaptchaTexts,
 } from '../client/types';
 
@@ -71,6 +72,16 @@ type DragState = {
   offsetY: number;
 };
 
+type CaptchaAsset = 'background' | 'piece';
+
+type AssetLoadEntry = {
+  background: boolean;
+  piece: boolean;
+  error: boolean;
+};
+
+type AssetLoadState = Record<string, AssetLoadEntry | undefined>;
+
 export function SlideCaptcha({
   baseUrl,
   csrfToken,
@@ -100,6 +111,27 @@ export function SlideCaptcha({
   const dragRef = useRef<DragState | null>(null);
   const interactionStartedAtRef = useRef<number>(now());
   const lastChallengeIdRef = useRef<string | null>(null);
+  const [assetLoadState, setAssetLoadState] = useState<AssetLoadState>({});
+
+  const preloadChallenge = useCallback(
+    async (nextChallenge: SlideCaptchaChallenge) => {
+      const nextBackgroundUrl = resolveAssetUrl(nextChallenge.background_url, baseUrl);
+      const nextPieceUrl = resolveAssetUrl(nextChallenge.piece_url, baseUrl);
+      const nextAssetKey = createAssetLoadKey(
+        nextChallenge.challenge_id,
+        nextBackgroundUrl,
+        nextPieceUrl,
+      );
+
+      await preloadCaptchaAssets(nextBackgroundUrl, nextPieceUrl);
+
+      setAssetLoadState((currentState) => ({
+        ...currentState,
+        [nextAssetKey]: createLoadedAssetEntry(),
+      }));
+    },
+    [baseUrl],
+  );
 
   const { state, refresh, verifyChallenge, setState } = useSlideCaptcha({
     baseUrl,
@@ -113,13 +145,38 @@ export function SlideCaptcha({
     onSuccess,
     onError,
     onChange,
+    prepareChallenge: preloadChallenge,
   });
 
   const { challenge } = state;
-  const isBusy = state.status === 'loading' || state.status === 'verifying';
+  const challengeId = challenge?.challenge_id ?? null;
+  const backgroundUrl = challenge ? resolveAssetUrl(challenge.background_url, baseUrl) : undefined;
+  const pieceUrl = challenge ? resolveAssetUrl(challenge.piece_url, baseUrl) : undefined;
+  const assetLoadKey =
+    challengeId && backgroundUrl && pieceUrl
+      ? createAssetLoadKey(challengeId, backgroundUrl, pieceUrl)
+      : null;
+  const currentAssetLoadState = assetLoadKey ? assetLoadState[assetLoadKey] : undefined;
+  const assetsAreReady =
+    Boolean(currentAssetLoadState?.background) &&
+    Boolean(currentAssetLoadState?.piece) &&
+    !currentAssetLoadState?.error;
+  const assetsHaveFailed = Boolean(currentAssetLoadState?.error);
+  const assetsAreLoading = Boolean(challenge) && !assetsAreReady && !assetsHaveFailed;
+  const visualStatus: SlideCaptchaStatus = assetsHaveFailed
+    ? 'error'
+    : state.status === 'ready' && assetsAreLoading
+      ? 'loading'
+      : state.status;
+  const isBusy = visualStatus === 'loading' || visualStatus === 'verifying';
   const isSolved = state.status === 'success';
   const canInteract =
-    Boolean(challenge) && !disabled && !isBusy && !isSolved && state.status !== 'error';
+    Boolean(challenge) &&
+    assetsAreReady &&
+    !disabled &&
+    !isBusy &&
+    !isSolved &&
+    state.status !== 'error';
 
   useEffect(() => {
     if (!challenge || lastChallengeIdRef.current === challenge.challenge_id) {
@@ -140,6 +197,65 @@ export function SlideCaptcha({
       status: 'ready',
     }));
   }, [challenge, setState]);
+
+  const markAssetLoaded = useCallback((asset: CaptchaAsset, loadedAssetKey: string) => {
+    setAssetLoadState((currentState) => {
+      const nextEntry = currentState[loadedAssetKey] ?? createAssetLoadEntry();
+
+      if (nextEntry.error || nextEntry[asset]) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        [loadedAssetKey]: {
+          ...nextEntry,
+          [asset]: true,
+        },
+      };
+    });
+  }, []);
+
+  const handleAssetLoad = useCallback(
+    (asset: CaptchaAsset, loadedAssetKey: string, image: HTMLImageElement) => {
+      const markLoaded = () => {
+        markAssetLoaded(asset, loadedAssetKey);
+      };
+
+      if (typeof image.decode === 'function') {
+        try {
+          void image
+            .decode()
+            .catch(() => undefined)
+            .then(markLoaded);
+          return;
+        } catch {
+          // Fall back to the load event result if decode is not usable in the current browser.
+        }
+      }
+
+      markLoaded();
+    },
+    [markAssetLoaded],
+  );
+
+  const handleAssetError = useCallback((loadedAssetKey: string) => {
+    setAssetLoadState((currentState) => {
+      const nextEntry = currentState[loadedAssetKey] ?? createAssetLoadEntry();
+
+      if (nextEntry.error) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        [loadedAssetKey]: {
+          ...nextEntry,
+          error: true,
+        },
+      };
+    });
+  }, []);
 
   const addMovement = useCallback(
     (x: number, y: number, rotation: number) => {
@@ -318,7 +434,7 @@ export function SlideCaptcha({
   }, [disabled, onRefresh, refresh]);
 
   const handleVerify = useCallback(async () => {
-    if (!challenge || disabled || isBusy || isSolved) {
+    if (!challenge || !canInteract) {
       return;
     }
 
@@ -341,10 +457,8 @@ export function SlideCaptcha({
       // The hook already normalizes and reports the error.
     }
   }, [
+    canInteract,
     challenge,
-    disabled,
-    isBusy,
-    isSolved,
     state.movements,
     state.rotation,
     state.x,
@@ -361,8 +475,6 @@ export function SlideCaptcha({
   }, [disabled, onCancel]);
 
   const rootClassName = ['scaptcha', className].filter(Boolean).join(' ');
-  const backgroundUrl = challenge ? resolveAssetUrl(challenge.background_url, baseUrl) : undefined;
-  const pieceUrl = challenge ? resolveAssetUrl(challenge.piece_url, baseUrl) : undefined;
   const rotationStep =
     challenge?.rotation_step && challenge.rotation_step > 0 ? challenge.rotation_step : 1;
   const rotationLimit = challenge ? getRotationSliderLimit(challenge.rotation_step) : 0;
@@ -393,23 +505,43 @@ export function SlideCaptcha({
         transform: `rotate(${normalizeRotation(state.rotation)}deg)`,
       }
     : undefined;
+  const shouldRenderStage = Boolean(challenge && assetLoadKey && !assetsHaveFailed);
+  const placeholderState = visualStatus === 'loading' ? 'loading' : 'empty';
+  const placeholderText =
+    visualStatus === 'loading' ? resolvedTexts.loading : resolvedTexts.challengeUnavailable;
 
   const captchaBody = (
     <>
       <div className="scaptcha__body">
         <div className="scaptcha__status" aria-live="polite">
-          {getStatusText(state.status, resolvedTexts)}
+          {getStatusText(visualStatus, resolvedTexts)}
         </div>
 
-        {challenge ? (
-          <div className="scaptcha__stage" ref={stageRef} style={stageStyle}>
+        {shouldRenderStage && challenge && assetLoadKey ? (
+          <div
+            className="scaptcha__stage"
+            data-assets={assetsAreReady ? 'ready' : 'loading'}
+            ref={stageRef}
+            style={stageStyle}
+          >
             <img
+              key={`background-${challenge.challenge_id}-${backgroundUrl}`}
               className="scaptcha__background"
               src={backgroundUrl}
               alt={resolvedTexts.backgroundAlt}
+              decoding="async"
               draggable={false}
+              fetchPriority="high"
+              loading="eager"
+              onError={() => {
+                handleAssetError(assetLoadKey);
+              }}
+              onLoad={(event) => {
+                handleAssetLoad('background', assetLoadKey, event.currentTarget);
+              }}
             />
             <img
+              key={`piece-${challenge.challenge_id}-${pieceUrl}`}
               className="scaptcha__piece"
               src={pieceUrl}
               alt={resolvedTexts.pieceAlt}
@@ -423,11 +555,30 @@ export function SlideCaptcha({
               onPointerUp={finishDragging}
               onPointerCancel={finishDragging}
               onKeyDown={handleKeyDown}
+              decoding="async"
+              fetchPriority="high"
+              loading="eager"
+              onError={() => {
+                handleAssetError(assetLoadKey);
+              }}
+              onLoad={(event) => {
+                handleAssetLoad('piece', assetLoadKey, event.currentTarget);
+              }}
               style={pieceStyle}
             />
+            {assetsAreLoading ? (
+              <div className="scaptcha__stage-loader" aria-hidden="true">
+                <span className="scaptcha__loader" />
+              </div>
+            ) : null}
           </div>
         ) : (
-          <div className="scaptcha__placeholder">{resolvedTexts.challengeUnavailable}</div>
+          <div className="scaptcha__placeholder" data-state={placeholderState}>
+            {placeholderState === 'loading' ? (
+              <span className="scaptcha__loader" aria-hidden="true" />
+            ) : null}
+            <span>{placeholderText}</span>
+          </div>
         )}
       </div>
 
@@ -480,7 +631,7 @@ export function SlideCaptcha({
             className="scaptcha__button scaptcha__button--primary"
             type="button"
             onClick={handleVerify}
-            disabled={!challenge || disabled || isBusy || isSolved || state.status === 'error'}
+            disabled={!canInteract}
           >
             <ShieldIcon />
             <span>{isSolved ? resolvedTexts.verified : resolvedTexts.verify}</span>
@@ -504,7 +655,7 @@ export function SlideCaptcha({
   return (
     <div
       className={rootClassName}
-      data-status={state.status}
+      data-status={visualStatus}
       data-theme={theme}
       data-variant={variant}
       aria-busy={isBusy}
@@ -561,7 +712,60 @@ export function SlideCaptcha({
   );
 }
 
-function getStatusText(status: string, texts: Required<SlideCaptchaTexts>): string {
+function createAssetLoadEntry(): AssetLoadEntry {
+  return {
+    background: false,
+    piece: false,
+    error: false,
+  };
+}
+
+function createLoadedAssetEntry(): AssetLoadEntry {
+  return {
+    background: true,
+    piece: true,
+    error: false,
+  };
+}
+
+async function preloadCaptchaAssets(backgroundUrl: string, pieceUrl: string): Promise<void> {
+  await Promise.all([preloadImage(backgroundUrl), preloadImage(pieceUrl)]);
+}
+
+async function preloadImage(url: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    const priorityImage = image as HTMLImageElement & { fetchPriority?: 'high' | 'low' | 'auto' };
+
+    image.decoding = 'async';
+    priorityImage.fetchPriority = 'high';
+    image.onload = () => {
+      if (typeof image.decode === 'function') {
+        void image
+          .decode()
+          .catch(() => undefined)
+          .then(resolve);
+        return;
+      }
+
+      resolve();
+    };
+    image.onerror = () => {
+      reject(new Error(`Could not load CAPTCHA image: ${url}`));
+    };
+    image.src = url;
+  });
+}
+
+function createAssetLoadKey(
+  challengeId: string,
+  backgroundUrl: string,
+  pieceUrl: string,
+): string {
+  return JSON.stringify([challengeId, backgroundUrl, pieceUrl]);
+}
+
+function getStatusText(status: SlideCaptchaStatus, texts: Required<SlideCaptchaTexts>): string {
   if (status === 'loading') {
     return texts.loading;
   }
@@ -572,6 +776,10 @@ function getStatusText(status: string, texts: Required<SlideCaptchaTexts>): stri
 
   if (status === 'verifying') {
     return texts.verify;
+  }
+
+  if (status === 'error') {
+    return texts.challengeUnavailable;
   }
 
   return texts.dragInstructions;

@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { createSlideCaptchaClient } from '../client/createSlideCaptchaClient';
 import { SlideCaptchaError, toSlideCaptchaError } from '../client/errors';
 import type {
+  SlideCaptchaChallenge,
   SlideCaptchaClientOptions,
   SlideCaptchaState,
   SlideCaptchaVerifyPayload,
@@ -14,6 +15,7 @@ export type UseSlideCaptchaOptions = SlideCaptchaClientOptions & {
   onSuccess?: (token: string) => void;
   onError?: (error: SlideCaptchaError) => void;
   onChange?: (state: SlideCaptchaState) => void;
+  prepareChallenge?: (challenge: SlideCaptchaChallenge) => Promise<void>;
 };
 
 export type UseSlideCaptchaReturn = {
@@ -23,8 +25,8 @@ export type UseSlideCaptchaReturn = {
   setState: Dispatch<SetStateAction<SlideCaptchaState>>;
 };
 
-const createInitialState = (): SlideCaptchaState => ({
-  status: 'idle',
+const createInitialState = (status: SlideCaptchaState['status'] = 'idle'): SlideCaptchaState => ({
+  status,
   challenge: null,
   x: 0,
   y: 0,
@@ -40,6 +42,7 @@ export function useSlideCaptcha(options: UseSlideCaptchaOptions = {}): UseSlideC
     onSuccess,
     onError,
     onChange,
+    prepareChallenge,
     baseUrl,
     headers,
     csrfToken,
@@ -50,8 +53,8 @@ export function useSlideCaptcha(options: UseSlideCaptchaOptions = {}): UseSlideC
     verifyPath,
   } = options;
 
-  const callbacksRef = useRef({ onSuccess, onError, onChange });
-  callbacksRef.current = { onSuccess, onError, onChange };
+  const callbacksRef = useRef({ onSuccess, onError, onChange, prepareChallenge });
+  callbacksRef.current = { onSuccess, onError, onChange, prepareChallenge };
 
   const client = useMemo(
     () =>
@@ -68,7 +71,9 @@ export function useSlideCaptcha(options: UseSlideCaptchaOptions = {}): UseSlideC
     [baseUrl, headers, csrfToken, csrfHeaderName, fetcher, credentials, challengePath, verifyPath],
   );
 
-  const [state, setStateValue] = useState<SlideCaptchaState>(() => createInitialState());
+  const [state, setStateValue] = useState<SlideCaptchaState>(() =>
+    createInitialState(autoLoad ? 'loading' : 'idle'),
+  );
 
   const setState = useCallback<Dispatch<SetStateAction<SlideCaptchaState>>>((nextState) => {
     setStateValue((currentState) => {
@@ -90,6 +95,9 @@ export function useSlideCaptcha(options: UseSlideCaptchaOptions = {}): UseSlideC
 
     try {
       const challenge = await client.getChallenge();
+
+      await callbacksRef.current.prepareChallenge?.(challenge);
+
       const nextState: SlideCaptchaState = {
         ...createInitialState(),
         status: 'ready',
