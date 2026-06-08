@@ -531,7 +531,6 @@ export function SlideCaptcha({
               alt={resolvedTexts.backgroundAlt}
               decoding="async"
               draggable={false}
-              fetchPriority="high"
               loading="eager"
               onError={() => {
                 handleAssetError(assetLoadKey);
@@ -556,7 +555,6 @@ export function SlideCaptcha({
               onPointerCancel={finishDragging}
               onKeyDown={handleKeyDown}
               decoding="async"
-              fetchPriority="high"
               loading="eager"
               onError={() => {
                 handleAssetError(assetLoadKey);
