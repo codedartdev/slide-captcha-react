@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SlideCaptcha } from '../src/components/SlideCaptcha';
@@ -21,6 +22,17 @@ function jsonResponse(data: unknown) {
       'Content-Type': 'application/json',
     },
   });
+}
+
+function pointerEvent(type: string, pointerId: number, clientX: number, clientY: number) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    clientX: { value: clientX },
+    clientY: { value: clientY },
+    isPrimary: { value: true },
+    pointerId: { value: pointerId },
+  });
+  return event;
 }
 
 type MockImageRecord = {
@@ -92,6 +104,58 @@ describe('SlideCaptcha', () => {
     vi.unstubAllGlobals();
   });
 
+  it('coalesces StrictMode auto-load into one logical challenge request', async () => {
+    let resolveChallenge!: (response: Response) => void;
+    const fetcher = vi.fn<typeof fetch>(
+      () =>
+        new Promise((resolve) => {
+          resolveChallenge = resolve;
+        }),
+    );
+
+    render(
+      <StrictMode>
+        <SlideCaptcha formData={{}} fetcher={fetcher} />
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    });
+
+    resolveChallenge(jsonResponse(challenge));
+    expect(await screen.findByAltText('Imagem do desafio CAPTCHA')).toBeInTheDocument();
+  });
+
+  it('aborts an in-flight challenge request after a real unmount', async () => {
+    let requestSignal: AbortSignal | null = null;
+    const fetcher = vi.fn<typeof fetch>((_input, init) => {
+      requestSignal = init?.signal ?? null;
+      return new Promise((_resolve, reject) => {
+        requestSignal?.addEventListener(
+          'abort',
+          () => reject(requestSignal?.reason ?? new DOMException('Aborted', 'AbortError')),
+          { once: true },
+        );
+      });
+    });
+
+    const view = render(
+      <StrictMode>
+        <SlideCaptcha formData={{}} fetcher={fetcher} />
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+    const activeSignal = requestSignal as AbortSignal | null;
+    expect(activeSignal).not.toBeNull();
+    expect(activeSignal?.aborted).toBe(false);
+
+    view.unmount();
+
+    await waitFor(() => expect(activeSignal?.aborted).toBe(true));
+  });
+
   it('shows loading feedback while the challenge is not available yet', async () => {
     let resolveChallenge!: (response: Response) => void;
     const fetcher = vi.fn<typeof fetch>(
@@ -101,7 +165,7 @@ describe('SlideCaptcha', () => {
         }),
     );
 
-    render(<SlideCaptcha fetcher={fetcher} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} />);
 
     expect(screen.getAllByText('Carregando CAPTCHA...')).toHaveLength(2);
     expect(screen.queryByText('Desafio indisponível.')).not.toBeInTheDocument();
@@ -116,7 +180,7 @@ describe('SlideCaptcha', () => {
     const imageLoader = mockImageLoader({ autoResolve: false });
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
 
-    render(<SlideCaptcha fetcher={fetcher} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} />);
 
     await waitFor(() => {
       expect(imageLoader.pending).toHaveLength(2);
@@ -141,7 +205,7 @@ describe('SlideCaptcha', () => {
       return jsonResponse(challenge);
     });
 
-    const { container } = render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
+    const { container } = render(<SlideCaptcha formData={{}} fetcher={fetcher} onSuccess={onSuccess} />);
 
     expect(container.firstElementChild?.getAttribute('data-theme')).toBe('dark');
     expect(container.firstElementChild?.getAttribute('data-variant')).toBe('inline');
@@ -166,6 +230,43 @@ describe('SlideCaptcha', () => {
     expect(payload.movements).toHaveLength(1);
   });
 
+  it('keeps a touch drag active through the challenge stage', async () => {
+    const onSuccess = vi.fn();
+    const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
+      if (init?.method === 'POST') {
+        return jsonResponse({ success: true, token: 'captcha-token' });
+      }
+
+      return jsonResponse(challenge);
+    });
+
+    const { container } = render(<SlideCaptcha formData={{}} fetcher={fetcher} onSuccess={onSuccess} />);
+    const { piece } = await waitForCaptchaReady();
+    const stage = container.querySelector('.scaptcha__stage') as HTMLDivElement;
+    const setPointerCapture = vi.fn();
+
+    Object.assign(stage, {
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 160 }),
+      setPointerCapture,
+      hasPointerCapture: () => true,
+      releasePointerCapture: vi.fn(),
+    });
+
+    fireEvent(piece, pointerEvent('pointerdown', 7, 10, 80));
+    fireEvent(stage, pointerEvent('pointermove', 7, 160, 100));
+    fireEvent(stage, pointerEvent('pointerup', 7, 160, 100));
+    fireEvent.click(screen.getByRole('button', { name: 'Verificar CAPTCHA' }));
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith('captcha-token');
+    });
+
+    expect(setPointerCapture).toHaveBeenCalledTimes(1);
+    const [, verifyInit] = fetcher.mock.calls[1];
+    const payload = JSON.parse(verifyInit?.body as string);
+    expect(payload).toMatchObject({ x: 150, y: 80 });
+  });
+
   it('updates the challenge rotation with the slider', async () => {
     const onSuccess = vi.fn();
     const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
@@ -181,7 +282,7 @@ describe('SlideCaptcha', () => {
       });
     });
 
-    render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} onSuccess={onSuccess} />);
 
     await waitForCaptchaReady();
     const rotationSlider = screen.getByRole('slider', { name: 'Ajustar rotação' });
@@ -223,7 +324,7 @@ describe('SlideCaptcha', () => {
       });
     });
 
-    render(<SlideCaptcha fetcher={fetcher} onSuccess={onSuccess} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} onSuccess={onSuccess} />);
 
     await waitForCaptchaReady();
     const rotationSlider = screen.getByRole('slider', { name: 'Ajustar rotação' });
@@ -250,7 +351,7 @@ describe('SlideCaptcha', () => {
     const onCancel = vi.fn();
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
 
-    render(<SlideCaptcha fetcher={fetcher} variant="modal" onCancel={onCancel} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} variant="modal" onCancel={onCancel} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Fechar verificação' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
@@ -262,7 +363,7 @@ describe('SlideCaptcha', () => {
     const onCancel = vi.fn();
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
 
-    render(<SlideCaptcha fetcher={fetcher} onCancel={onCancel} />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} onCancel={onCancel} />);
 
     expect(
       screen.queryByRole('heading', { name: 'Verificação de segurança' }),
@@ -278,6 +379,7 @@ describe('SlideCaptcha', () => {
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
     const { container } = render(
       <SlideCaptcha
+      formData={{}}
         fetcher={fetcher}
         colors={{
           accent: '#facc15',
@@ -310,7 +412,7 @@ describe('SlideCaptcha', () => {
   it('can render as a light modal dialog', async () => {
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
 
-    render(<SlideCaptcha fetcher={fetcher} theme="light" variant="modal" />);
+    render(<SlideCaptcha formData={{}} fetcher={fetcher} theme="light" variant="modal" />);
 
     const dialog = screen.getByRole('dialog', { name: 'Verificação de segurança' });
     const root = dialog.parentElement;

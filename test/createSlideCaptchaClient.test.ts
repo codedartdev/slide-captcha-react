@@ -24,6 +24,36 @@ function jsonResponse(data: unknown, init: ResponseInit = {}) {
 }
 
 describe('createSlideCaptchaClient', () => {
+  it('uses the same-origin Laravel endpoints without path configuration', async () => {
+    const fetcher = vi.fn<typeof fetch>(async (input) => (
+      String(input).endsWith('/verify')
+        ? jsonResponse({ success: true, token: 'ok' })
+        : jsonResponse(challenge)
+    ));
+    const client = createSlideCaptchaClient({ fetcher });
+
+    await client.getChallenge();
+    await client.verifyChallenge({
+      form_data: {},
+      challenge_id: 'challenge-1',
+      x: 120,
+      y: 45,
+      rotation: 0,
+      movements: [{ x: 120, y: 45, r: 0, t: 320 }],
+    });
+
+    expect(fetcher.mock.calls[0]?.[0]).toBe('/slide-captcha/new');
+    expect(fetcher.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      method: 'GET',
+      credentials: 'same-origin',
+    }));
+    expect(fetcher.mock.calls[1]?.[0]).toBe('/slide-captcha/verify');
+    expect(fetcher.mock.calls[1]?.[1]).toEqual(expect.objectContaining({
+      method: 'POST',
+      credentials: 'same-origin',
+    }));
+  });
+
   it('loads a challenge with baseUrl, custom headers and csrf token', async () => {
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse(challenge));
     const client = createSlideCaptchaClient({
@@ -52,6 +82,30 @@ describe('createSlideCaptchaClient', () => {
     expect(headers.get('X-CSRF-TOKEN')).toBe('csrf-token');
   });
 
+  it('forwards AbortSignal to challenge and verification requests', async () => {
+    const fetcher = vi.fn<typeof fetch>(async (input) => (
+      String(input).endsWith('/verify')
+        ? jsonResponse({ success: true, token: 'ok' })
+        : jsonResponse(challenge)
+    ));
+    const client = createSlideCaptchaClient({ fetcher });
+    const challengeController = new AbortController();
+    const verifyController = new AbortController();
+
+    await client.getChallenge({ signal: challengeController.signal });
+    await client.verifyChallenge({
+      form_data: {},
+      challenge_id: 'challenge-1',
+      x: 120,
+      y: 45,
+      rotation: 0,
+      movements: [],
+    }, { signal: verifyController.signal });
+
+    expect(fetcher.mock.calls[0]?.[1]?.signal).toBe(challengeController.signal);
+    expect(fetcher.mock.calls[1]?.[1]?.signal).toBe(verifyController.signal);
+  });
+
   it('verifies a challenge using JSON payload', async () => {
     const fetcher = vi.fn<typeof fetch>(async () => jsonResponse({ success: true, token: 'ok' }));
     const client = createSlideCaptchaClient({
@@ -60,6 +114,7 @@ describe('createSlideCaptchaClient', () => {
     });
 
     const result = await client.verifyChallenge({
+      form_data: {},
       challenge_id: 'challenge-1',
       x: 120,
       y: 45,
@@ -77,6 +132,7 @@ describe('createSlideCaptchaClient', () => {
     );
     expect(headers.get('Content-Type')).toBe('application/json');
     expect(JSON.parse(init?.body as string)).toEqual({
+      form_data: {},
       challenge_id: 'challenge-1',
       x: 120,
       y: 45,

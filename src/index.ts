@@ -1,3 +1,4 @@
+export const SLIDE_CAPTCHA_FORM_BINDING_VERSION = 1;
 export { createSlideCaptchaClient } from './client/createSlideCaptchaClient';
 export type { SlideCaptchaClient } from './client/createSlideCaptchaClient';
 export { SlideCaptchaError, isSlideCaptchaError, toSlideCaptchaError } from './client/errors';
@@ -13,6 +14,7 @@ export type {
   SlideCaptchaHeaders,
   SlideCaptchaMovementPoint,
   SlideCaptchaProps,
+  SlideCaptchaRequestOptions,
   SlideCaptchaState,
   SlideCaptchaStatus,
   SlideCaptchaTheme,

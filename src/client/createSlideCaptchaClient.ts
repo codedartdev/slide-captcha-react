@@ -1,7 +1,9 @@
+import { snapshotFormData } from './formData';
 import { SlideCaptchaError } from './errors';
 import type {
   SlideCaptchaChallenge,
   SlideCaptchaClientOptions,
+  SlideCaptchaRequestOptions,
   SlideCaptchaVerifyPayload,
   SlideCaptchaVerifyResponse,
 } from './types';
@@ -11,8 +13,11 @@ const DEFAULT_VERIFY_PATH = '/slide-captcha/verify';
 const DEFAULT_CSRF_HEADER = 'X-CSRF-TOKEN';
 
 export type SlideCaptchaClient = {
-  getChallenge: () => Promise<SlideCaptchaChallenge>;
-  verifyChallenge: (payload: SlideCaptchaVerifyPayload) => Promise<SlideCaptchaVerifyResponse>;
+  getChallenge: (options?: SlideCaptchaRequestOptions) => Promise<SlideCaptchaChallenge>;
+  verifyChallenge: (
+    payload: SlideCaptchaVerifyPayload,
+    options?: SlideCaptchaRequestOptions,
+  ) => Promise<SlideCaptchaVerifyResponse>;
 };
 
 export function createSlideCaptchaClient(
@@ -21,7 +26,7 @@ export function createSlideCaptchaClient(
   const fetcher = resolveFetcher(options.fetcher);
 
   return {
-    getChallenge() {
+    getChallenge(requestOptions = {}) {
       return requestJson(
         fetcher,
         buildUrl(options.baseUrl, options.challengePath ?? DEFAULT_CHALLENGE_PATH),
@@ -29,12 +34,13 @@ export function createSlideCaptchaClient(
           method: 'GET',
           headers: buildHeaders(options, false),
           credentials: options.credentials ?? 'same-origin',
+          signal: requestOptions.signal,
         },
         validateChallenge,
       );
     },
 
-    verifyChallenge(payload) {
+    verifyChallenge(payload, requestOptions = {}) {
       return requestJson(
         fetcher,
         buildUrl(options.baseUrl, options.verifyPath ?? DEFAULT_VERIFY_PATH),
@@ -42,7 +48,8 @@ export function createSlideCaptchaClient(
           method: 'POST',
           headers: buildHeaders(options, true),
           credentials: options.credentials ?? 'same-origin',
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, form_data: snapshotFormData(payload.form_data) }),
+          signal: requestOptions.signal,
         },
         validateVerifyResponse,
       );
@@ -202,7 +209,7 @@ function validateChallenge(data: unknown): SlideCaptchaChallenge {
 function validateVerifyResponse(data: unknown): SlideCaptchaVerifyResponse {
   const response: SlideCaptchaVerifyResponse = {
     success: readRequiredBoolean(data, 'success'),
-    token: readOptionalString(data, 'token'),
+    token: readOptionalString(data, 'token') ?? readOptionalString(data, 'verification_token'),
     reason: readOptionalString(data, 'reason'),
     message: readOptionalString(data, 'message'),
   };

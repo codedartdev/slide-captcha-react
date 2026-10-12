@@ -6,6 +6,7 @@ Endpoints esperados:
 
 - `GET /slide-captcha/new`
 - `POST /slide-captcha/verify`
+- `GET /slide-captcha/generated/*` para as imagens temporárias retornadas pelo desafio
 
 ## Instalação
 
@@ -28,6 +29,7 @@ import '@codedartdev/slide-captcha-react/styles.css';
 export function LoginCaptcha() {
   return (
     <SlideCaptcha
+      formData={formData}
       baseUrl={import.meta.env.VITE_API_BASE_URL}
       csrfToken={document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content}
       onSuccess={(token) => {
@@ -43,6 +45,27 @@ export function LoginCaptcha() {
 
 `baseUrl` é opcional. Se omitido, o pacote chama `/slide-captcha/new` e `/slide-captcha/verify` no mesmo host da aplicação.
 
+## Next.js com CoinSentry
+
+Quando a aplicação usa `@codedartdev/coinsentry-next`, o proxy padrão já
+encaminha e assina o fluxo completo. Nenhum path ou fetcher precisa ser
+configurado:
+
+```tsx
+'use client';
+
+import { SlideCaptcha } from '@codedartdev/slide-captcha-react';
+import '@codedartdev/slide-captcha-react/styles.css';
+
+export function LoginCaptcha() {
+  return <SlideCaptcha formData={formData} />;
+}
+```
+
+O BFF converte as URLs temporárias das imagens em paths same-origin e preserva
+a query assinada pelo Laravel. Como as imagens são carregadas por elementos
+`img`, headers fornecidos por `fetcher` não são aplicados a elas.
+
 ## Laravel e Laravel Vite
 
 Em uma view Blade, exponha o CSRF token:
@@ -56,7 +79,7 @@ No frontend:
 ```tsx
 const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
 
-<SlideCaptcha baseUrl={import.meta.env.VITE_API_BASE_URL} csrfToken={csrfToken} />;
+<SlideCaptcha formData={formData} baseUrl={import.meta.env.VITE_API_BASE_URL} csrfToken={csrfToken} />;
 ```
 
 Se sua API estiver no mesmo domínio do app Laravel, `baseUrl` pode ficar vazio. Se estiver em outro host, configure no `.env` do Vite:
@@ -108,6 +131,7 @@ export function LoginForm() {
       />
 
       <SlideCaptcha
+      formData={formData}
         baseUrl={import.meta.env.VITE_API_BASE_URL}
         onSuccess={(token) => {
           setValue('slide_captcha_token', token, { shouldValidate: true });
@@ -145,6 +169,7 @@ const client = createSlideCaptchaClient({
 
 const challenge = await client.getChallenge();
 const result = await client.verifyChallenge({
+  form_data: formData,
   challenge_id: challenge.challenge_id,
   x: 120,
   y: 40,
@@ -198,13 +223,14 @@ Use `className` e sobrescreva as variáveis CSS:
 ```
 
 ```tsx
-<SlideCaptcha className="meu-captcha" />
+<SlideCaptcha formData={formData} className="meu-captcha" />
 ```
 
 Também é possível customizar as cores diretamente pelo componente com `colors`. Os valores aceitam qualquer cor CSS válida; os campos de sombra aceitam valores de `box-shadow`:
 
 ```tsx
 <SlideCaptcha
+      formData={formData}
   variant="modal"
   colors={{
     background: '#10131a',
@@ -224,19 +250,19 @@ Também é possível customizar as cores diretamente pelo componente com `colors
 Escolha o tema com `theme="dark"` ou `theme="light"`. O padrão é `dark`:
 
 ```tsx
-<SlideCaptcha theme="light" />
+<SlideCaptcha formData={formData} theme="light" />
 ```
 
 Escolha a apresentação com `variant="inline"` ou `variant="modal"`. O padrão é `inline`, que renderiza apenas o corpo funcional do CAPTCHA:
 
 ```tsx
-<SlideCaptcha variant="inline" />
+<SlideCaptcha formData={formData} variant="inline" />
 ```
 
 Para usar a experiência completa de modal, combine `variant="modal"` com `onCancel` para exibir cabeçalho, fechar e cancelar:
 
 ```tsx
-<SlideCaptcha variant="modal" theme="dark" onCancel={() => setCaptchaOpen(false)} />
+<SlideCaptcha formData={formData} variant="modal" theme="dark" onCancel={() => setCaptchaOpen(false)} />
 ```
 
 Chaves disponíveis em `colors` e suas variáveis CSS equivalentes:
@@ -320,3 +346,17 @@ O pacote publicado usa somente a build compilada em `dist`. Os campos `main`, `m
 O script `prepack` executa `npm run build` automaticamente antes de `npm pack` e `npm publish`, garantindo que o tarball contenha a build atualizada. O pacote não usa `postinstall`, porque instalar dependências não deve executar build no ambiente do consumidor; isso evita problemas de segurança, compatibilidade com CI, instalações offline e experiência de instalação.
 
 O diretório `src` permanece no repositório como referência técnica e base de desenvolvimento, mas não entra no pacote publicado.
+
+## Form-bound CAPTCHA (next release, not published)
+
+Verification requires the exact final JSON form values. `SlideCaptcha` and
+`useSlideCaptcha` require `formData`; direct client verification requires
+`form_data`. The CoinSentry adapter receives a frozen `formData` snapshot.
+Do not log snapshots or place credentials/proofs in persistent storage. Cancel
+pending attempts when fields change. Concurrent proof acquisitions are rejected.
+Laravel Slide CAPTCHA 0.3.0 validates the values authoritatively and consumes
+mismatched proofs. The browser/mobile checks alone are not a security boundary.
+
+Publish compatible package versions before updating application npm locks.
+Local test tarballs are not production releases. Roll out updated application,
+assets, Composer dependency and npm locks together.

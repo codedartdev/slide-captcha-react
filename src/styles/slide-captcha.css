@@ -259,6 +259,7 @@
 .scaptcha__stage {
   position: relative;
   touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .scaptcha__placeholder {
@@ -405,11 +406,12 @@
 
 .scaptcha__rotation-slider {
   width: 100%;
-  height: 24px;
+  height: 44px;
   margin: 0;
   appearance: none;
   background: transparent;
   cursor: pointer;
+  touch-action: pan-x;
 }
 
 .scaptcha__rotation-slider:disabled {
@@ -418,7 +420,7 @@
 }
 
 .scaptcha__rotation-slider::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -432,18 +434,18 @@
 }
 
 .scaptcha__rotation-slider::-webkit-slider-thumb {
-  width: 2px;
-  height: 14px;
-  margin-top: -4px;
+  width: 28px;
+  height: 28px;
+  margin-top: -10px;
   appearance: none;
-  border: 0;
-  border-radius: 1px;
+  border: 2px solid var(--scaptcha-bg);
+  border-radius: 999px;
   background: var(--scaptcha-primary);
   box-shadow: var(--scaptcha-rotation-thumb-shadow);
 }
 
 .scaptcha__rotation-slider::-moz-range-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -457,16 +459,16 @@
 }
 
 .scaptcha__rotation-slider::-moz-range-progress {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: transparent;
 }
 
 .scaptcha__rotation-slider::-moz-range-thumb {
-  width: 2px;
-  height: 14px;
-  border: 0;
-  border-radius: 1px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--scaptcha-bg);
+  border-radius: 999px;
   background: var(--scaptcha-primary);
   box-shadow: var(--scaptcha-rotation-thumb-shadow);
 }

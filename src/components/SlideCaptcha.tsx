@@ -83,6 +83,7 @@ type AssetLoadEntry = {
 type AssetLoadState = Record<string, AssetLoadEntry | undefined>;
 
 export function SlideCaptcha({
+  formData,
   baseUrl,
   csrfToken,
   csrfHeaderName,
@@ -134,7 +135,8 @@ export function SlideCaptcha({
   );
 
   const { state, refresh, verifyChallenge, setState } = useSlideCaptcha({
-    baseUrl,
+    formData,
+  baseUrl,
     csrfToken,
     csrfHeaderName,
     headers,
@@ -303,10 +305,11 @@ export function SlideCaptcha({
 
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLImageElement>) => {
-      if (!challenge || !canInteract || !stageRef.current) {
+      if (event.isPrimary === false || !challenge || !canInteract || !stageRef.current) {
         return;
       }
 
+      event.preventDefault();
       const rect = stageRef.current.getBoundingClientRect();
       const pieceDisplayX = (state.x / challenge.image_width) * rect.width;
       const pieceDisplayY = (state.y / challenge.image_height) * rect.height;
@@ -317,7 +320,7 @@ export function SlideCaptcha({
         offsetY: event.clientY - rect.top - pieceDisplayY,
       };
 
-      event.currentTarget.setPointerCapture(event.pointerId);
+      stageRef.current.setPointerCapture(event.pointerId);
       setState((currentState) => ({
         ...currentState,
         status: 'dragging',
@@ -330,13 +333,14 @@ export function SlideCaptcha({
   );
 
   const handlePointerMove = useCallback(
-    (event: PointerEvent<HTMLImageElement>) => {
+    (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragRef.current;
 
       if (!dragState || dragState.pointerId !== event.pointerId || !canInteract) {
         return;
       }
 
+      event.preventDefault();
       const position = getNaturalPosition(
         event.clientX,
         event.clientY,
@@ -350,7 +354,7 @@ export function SlideCaptcha({
   );
 
   const finishDragging = useCallback(
-    (event: PointerEvent<HTMLImageElement>) => {
+    (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragRef.current;
 
       if (!dragState || dragState.pointerId !== event.pointerId) {
@@ -363,6 +367,23 @@ export function SlideCaptcha({
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
 
+      setState((currentState) => ({
+        ...currentState,
+        status: currentState.status === 'dragging' ? 'ready' : currentState.status,
+      }));
+    },
+    [setState],
+  );
+
+  const handleLostPointerCapture = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      const dragState = dragRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      dragRef.current = null;
       setState((currentState) => ({
         ...currentState,
         status: currentState.status === 'dragging' ? 'ready' : currentState.status,
@@ -523,6 +544,10 @@ export function SlideCaptcha({
             data-assets={assetsAreReady ? 'ready' : 'loading'}
             ref={stageRef}
             style={stageStyle}
+            onPointerMove={handlePointerMove}
+            onPointerUp={finishDragging}
+            onPointerCancel={finishDragging}
+            onLostPointerCapture={handleLostPointerCapture}
           >
             <img
               key={`background-${challenge.challenge_id}-${backgroundUrl}`}
@@ -550,9 +575,6 @@ export function SlideCaptcha({
               aria-disabled={!canInteract}
               draggable={false}
               onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={finishDragging}
-              onPointerCancel={finishDragging}
               onKeyDown={handleKeyDown}
               decoding="async"
               loading="eager"

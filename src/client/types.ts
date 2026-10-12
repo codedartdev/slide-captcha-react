@@ -20,6 +20,7 @@ export type SlideCaptchaChallenge = {
 };
 
 export type SlideCaptchaVerifyPayload = {
+  form_data: Record<string, unknown>;
   challenge_id: string;
   x: number;
   y: number;
@@ -37,6 +38,10 @@ export type SlideCaptchaVerifyResponse = {
 export type SlideCaptchaFetch = typeof fetch;
 
 export type SlideCaptchaHeaders = HeadersInit | (() => HeadersInit | undefined);
+
+export type SlideCaptchaRequestOptions = {
+  signal?: AbortSignal;
+};
 
 export type SlideCaptchaClientOptions = {
   baseUrl?: string;
@@ -130,6 +135,7 @@ export type SlideCaptchaTexts = {
 };
 
 export type SlideCaptchaProps = SlideCaptchaClientOptions & {
+  formData: Record<string, unknown>;
   className?: string;
   disabled?: boolean;
   theme?: SlideCaptchaTheme;

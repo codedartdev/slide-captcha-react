@@ -89,6 +89,7 @@ export function App() {
         />
 
         <SlideCaptcha
+      formData={{}}
           baseUrl={import.meta.env.VITE_API_BASE_URL}
           csrfToken={csrfToken}
           onSuccess={(token) => {
